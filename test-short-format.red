@@ -3,12 +3,16 @@
 do %short-format.red
 
 tests: context [
-	parse-test: func [
+	parse-test: function [
 		input [string!] 
 	][
-		print mold input
-		print mold parse-as-short-format input
-		print "-----"
+		print "parse-as-short-format"
+		print [tab "INPUT: ^/^-^-" mold input]
+		res: parse-as-short-format input
+		print [tab "OUTPUT:"]
+		either object? res [print [tab tab trim/lines mold res]][
+			foreach item res [print [tab tab trim/lines mold item]]
+		]		
 	]
 	parse-specs: [
 		""
@@ -48,11 +52,11 @@ tests: context [
 		input [string!] "Spec as string to be parsed"
 		value
 	][
-		print mold input
-		;print [type? value]
+		print "apply-test"
+		print [tab "INPUT: " mold input]
+		print [tab "VALUE: " trim/lines mold value]
 		res: short-form input value
-		print mold res
-		print "-----"
+		print [tab "OUTPUT:" mold res]
 	]
 	apply-specs: compose/only [
 		""				123.456
@@ -159,7 +163,9 @@ test-apply: func [str val][
 
 
 tests/run-parse-tests
+print '--------------------------------------
 tests/run-apply-tests
+print '--------------------------------------
 test-apply ":5" 123.456
 
 halt
