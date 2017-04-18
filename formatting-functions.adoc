@@ -4,8 +4,8 @@
 :numbered:
 
 ////
-# https://powerman.name/doc/asciidoc
-# _**XXX is far from being implemented, mention it here?**_
+https://powerman.name/doc/asciidoc
+_**XXX is far from being implemented, mention it here?**_
 ////
 
 == Introduction
@@ -150,9 +150,19 @@ that covers all our needs, even if there ends up being a single
 
 == Contexts and Functions
 
+_**There are some long and terrible names in place. Known and sometimes intentional.**_
+
+Naming is important, and more thought will go into things. As I
+work through examples, I sometimes need to give things names that
+are very clear, breaking pieces down by named functionality. But
+I can't pick the best names, because the structure isn't nailed
+down yet. This also affects dependencies. As code is merged, 
+more common bits can be shared.
 
 
 === Composite
+
+> "Replace :( ... ): sections with their evaluated results."
 
 The name of the function (`composite`) is tricky. Rebol calls this
 `build-markup`, which isn't bad, but defines a more limited view of its 
@@ -173,8 +183,6 @@ major decisions to be made:
 1. What are the start/end markers for substitution expressions.
 2. What do we do in the case of mismatched markers.
 
-> "Replace :( ... ): sections with their evaluated results."
-
 The `:( ... ):` markers already have meaning in Red. Colons are used to
 get and set values, and parens indicate evaluation.
 
@@ -191,18 +199,18 @@ Examples:
 
 ....
 Composite
-    ""              == ""
-    ":(1):"         == "1"
-    ":(pi):"        == "3.141592653589793"
-    ":(rejoin ['a 'b]):" == "ab"
-    "a:('--):b"     == "a--b"
-    "a:('--):"      == "a--"
-    ":('--):b"      == "--b"
-    "ax:(1 / 0):xb" == "ax *** Error: zero-divide Where: 1 / 0 *** xb"
-    ":("            == ":("
-    ":('end"        == ":('end"
-    "):"            == "):"
-    ")::("          == ")::("
+    ""                      == ""
+    ":(1):"                 == "1"
+    ":(pi):"                == "3.141592653589793"
+    ":(rejoin ['a 'b]):"    == "ab"
+    "a:('--):b"             == "a--b"
+    "a:('--):"              == "a--"
+    ":('--):b"              == "--b"
+    "ax:(1 / 0):xb"         == "ax *** Error: zero-divide Where: 1 / 0 *** xb"
+    ":("                    == ":("
+    ":('end"                == ":('end"
+    "):"                    == "):"
+    ")::("                  == ")::("
 
 Composite/hide-errors
     "ax:(1 / 0):xb" == "axxb"
@@ -210,6 +218,15 @@ Composite/hide-errors
 
 
 == Values
+
+We should leverage types for all they're worth. While it will be nice of
+us to support formatting float! as percent!, or as money! (AHHH!), we
+really need to tell people to use appropriate datatypes.
+
+Being able to access values, when formatting more than a single value at
+at time, including structured values, is convenient. The ability to do
+this has to be balanced against complexity and risk (security).
+
 
 == Interpolation
 
@@ -239,10 +256,12 @@ cover basic needs, and allow users to easily extend it.
 == Short Formats (ala `printf`)
 
 Short-formats are like `printf`, but not exactly the same:
+
 - Flags are "<>_+0Zz" = [left-align right-align space-for-+  +-for-+  zero-fill zero-fill]
   0 is a bit confusing in some cases, because it could be the last flag char, but
   then you may have leading 0s in the width, that follows. Have to decide if
   it's worth keeping.
+
 - Width+precision are [m][.n] 
 
 The sigil is the hardest thing to choose. `%` is for files in Red. I like `:`,
@@ -254,8 +273,12 @@ I think those apply to string interpolation, not single value short format
 applications.
 
 The biggest downside to `:` as a sigil is time values.
+
 Alt sigil ideas: _=&@! But I don't really care for any of them.
+
 I don't like ~ or ` as sigil options either.
 
-
+Escaping the sigil with the standard escape character isn't beautiful either
+(`^^:`), but I don't want to double characters as an escape mechanism when
+we already have a known escape pattern.
 
