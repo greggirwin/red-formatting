@@ -51,10 +51,3 @@ composite-ctx: context [
 	]
 
 ]
-
-test-composite: func [input][
-	print [mold input "==" mold composite input]
-]
-test-composite-no-err: func [input][
-	print [mold input "==" mold composite/hide-errors input]
-]
