@@ -225,6 +225,20 @@ formatting: context [
 		]
 		form pick fmt value						; Form is used here to support custom values
 	]
+
+	set 'mold-logic function [
+		"Return a logic value as a word"
+		value [logic!]
+		/true-false "(default)"
+		/on-off
+		/yes-no
+	][
+		pick case [
+			on-off [[on off]]
+			yes-no [[yes no]]
+			'else  [[true false]]
+		] value
+	]
 		
 	;---------------------------------------------------------------------------
 	; Mask formatting parse rules
