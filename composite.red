@@ -6,15 +6,6 @@ Red [
 	}
 ]
 
-; The name of the function (`composite`) is tricky. Rebol calls this
-; `build-markup`, which isn't bad, but defines a more limited view of its 
-; use. We want a word that says it operates on a single argument, so things
-; like `intersperse` or `interject` don't read as well to me. It sounds like
-; the take something(s) to insert. `Inset` is too close to `insert`. Another
-; option is a neologism, like `interform`, which implies both putting a thing
-; in a place, and `form`ing it. `Composite` is generally used as a term
-; related to image processing, which is a possible point of confusion.
-
 composite-ctx: context [
 
 	eval: func [
@@ -42,7 +33,7 @@ composite-ctx: context [
 	; they will be visible in the output. We can support both behaviors
 	; with a refinement, and then just have to choose the default.
 	set 'composite func [
-		"Replace (: ... :) sections with their evaluated results."
+		"Replace :( ... ): sections with their evaluated results."
 		data [string! file! url!]
 		/hide-errors "Suppress error output"
 		/local expr
