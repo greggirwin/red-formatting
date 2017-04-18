@@ -123,16 +123,6 @@ formatting: context [
 			'else      [append form :a :b]
 		]
 	]
-	e.g. [
-		join 1 2
-		join "a" 'b
-		join %a #b
-		join [a] 'b
-		join 'a/b 'c
-		join #(a: 1) [b: 2]
-		join #(a: 1) #(b: 2)
-		join context [a: 1] [b: 2]
-	]
 		
 	;---------------------------------------------------------------------------
 
@@ -166,30 +156,6 @@ formatting: context [
 		]
 		num
 	]
-	e.g. [
-		form-num-with-group-seps 9
-		form-num-with-group-seps 99
-		form-num-with-group-seps 999
-		form-num-with-group-seps 9999
-		form-num-with-group-seps 99999
-		form-num-with-group-seps 999999
-		form-num-with-group-seps 9999999
-		form-num-with-group-seps -9999999
-		form-num-with-group-seps 9999999.9
-		form-num-with-group-seps -9999999.9
-		form-num-with-group-seps/with "-9999999,9" #"."
-		form-num-with-group-seps/every 9          2
-		form-num-with-group-seps/every 99         2
-		form-num-with-group-seps/every 999        2
-		form-num-with-group-seps/every 9999       2
-		form-num-with-group-seps/every 99999      2
-		form-num-with-group-seps/every 999999     2
-		form-num-with-group-seps/every 9999999    2
-		form-num-with-group-seps/every -9999999   2
-		form-num-with-group-seps/every 9999999.9  2
-		form-num-with-group-seps/every -9999999.9 2
-		form-num-with-group-seps/with/every "-9999999,9" #"." 2
-	]	
 
 	pad-aligned: func [
 		"Wrapper for `pad` to ease refinement propagation"
@@ -200,25 +166,14 @@ formatting: context [
 			right [pad/with/left str wd ch]
 		]
 	]
-	e.g. [
-		pad-aligned "" 'left 10 #" "
-		pad-aligned "" 'left 10 #"0"
-		pad-aligned "x" 'left 10 #"."
-		pad-aligned "x" 'right 10 #"."
-		pad-aligned "x" 'right -10 #"."
-		pad-aligned "xxxxxxxxx" 'right 10 #"."
-		pad-aligned "xxxxxxxxxx" 'right 10 #"."
-		pad-aligned "xxxxxxxxxxx" 'right 10 #"."
-	]	
 	
 	;---------------------------------------------------------------------------
 
-	; Credit to Gabriele Santilli for the idea this is based on.
 	set 'format-bytes function [
 		"Return a string containing the size and units, auto-scaled"
 		size [number!]
-		/to scale "How closely to round; default is 1" ; or should this be a target unit?
-		/as unit [word!] {One of [bytes KB MB GB TB PB EB ZB YB]}
+		/to scale "Rounding precision; default is 1"
+		/as unit [word!] "One of [bytes KB MB GB TB PB EB ZB YB]"
 		/sep  ch [char! string!] "Separator to use between number and unit"
 	][
 		scale: any [scale 1]
@@ -233,6 +188,7 @@ formatting: context [
 			size: size / (2.0 ** (10 * subtract index? find units unit 1))
 			rejoin [round/to size scale  any [ch ""]  unit]
 		][
+			; Credit to Gabriele Santilli for the idea this is based on.
 			while [size > 1024][
 				size: size / 1024.0
 				units: next units
@@ -241,94 +197,37 @@ formatting: context [
 			rejoin [round/to size scale  any [ch ""]  units/1]
 		]
 	]
-	e.g. [
-		format-bytes 1
-		format-bytes 1500
-		format-bytes/to 1500 .1
-		format-bytes 2048
-		format-bytes 9999
-		format-bytes 99999
-		format-bytes 999999
-		format-bytes 9999999
-		format-bytes 99999999
-		format-bytes 999999999
-		format-bytes 9999999999
-		format-bytes 99999999999
-		format-bytes 999999999999
-		format-bytes 9999999999999
-		format-bytes 99999999999999
-		format-bytes 999999999999999
-		format-bytes 9999999999999999
-		format-bytes 99999999999999999
-		format-bytes 999999999999999999
-		format-bytes 9999999999999999999
-		format-bytes 99999999999999999999
-		format-bytes 999999999999999999999
-		format-bytes 9999999999999999999999
-		format-bytes 99999999999999999999999
-		format-bytes 999999999999999999999999
-		format-bytes 9999999999999999999999999
-		format-bytes 99999999999999999999999999
-		format-bytes 999999999999999999999999999
-		format-bytes/to 999999999999999999999999999 .01
-		format-bytes 99999999999999999999999999999
-		
-		format-bytes 999999999
-		format-bytes/as 999999999 'GB
-		format-bytes/as/to 999999999 'GB 1.0
-		format-bytes/to 999999999 .01
-		format-bytes/as/to 999999999 'GB .01
-		format-bytes/to/as 1500 .1 'bytes
-		format-bytes/to/as/sep 1500 .1 'bytes space
-		format-bytes/to/as/sep 1500 .1 'bytes #"_"
-	]
 		
 	; Should this also support integers, so format-number doesn't have to call this 
 	; func? Really, it could support any value that can be converted to logic, but
 	; is that more helpful to the user, or will it make things more confusing for
 	; values like "" that convert to TRUE?
-	set 'format-logic func [
+	set 'format-logic function [
 		"Format a logic value as a string"
 		value [logic!] "If a custom format is used, fmt/1 is for true, fmt/2 for false"
 		fmt   [word! string! block!] "Custom format, or one of [true-false on-off yes-no TF YN]"
 	][
-		if word? fmt [
-			; Named formats
-			fmt: select [
-				true-false ["True" "False"]
-				on-off     ["On" "Off"]
-				yes-no     ["Yes" "No"]
-				TF         "TF"
-				YN         "YN"
-			] fmt
-			if none? fmt [return make error! "Unknown named format passed to format-logic"]
+		fmts: [
+			true-false ["True" "False"]
+			on-off     ["On" "Off"]
+			yes-no     ["Yes" "No"]
+			TF         "TF"
+			YN         "YN"
+		]
+		if word? fmt [							; Named formats
+			if not find/skip fmts fmt 2 [
+				return make error! rejoin ["Unknown named format passed to format-logic: " fmt]
+			]
+			fmt: fmts/:fmt
+		]
+		if 2 <> length? fmt [
+			return make error! rejoin ["Format must contain 2 values: " fmt]
 		]
 		form pick fmt value						; Form is used here to support custom values
 	]
-	e.g. [
-		format-logic true  'true-false
-		format-logic false 'true-false
-		format-logic true  'on-off
-		format-logic false 'on-off
-		format-logic true  'yes-no
-		format-logic false 'yes-no
-		format-logic true  'TF
-		format-logic false 'TF
-		format-logic true  'YN
-		format-logic false 'YN
-		format-logic true  "+-"
-		format-logic false "+-"
-		format-logic true  [.t .f]
-		format-logic false [.t .f]
-		format-logic true  ""
-		format-logic false ""
-		format-logic true  []
-		format-logic false []
-		format-logic true  'xyz
-	]
 		
 	;---------------------------------------------------------------------------
-	; Parse rules
+	; Mask formatting parse rules
 	
 	nbsp: " "   ; char 160 - non-breaking space  alt syntax = #"^(A0)"
 	thinsp: " " ; 8201 \u+2009 thin space
@@ -395,48 +294,6 @@ formatting: context [
 		]
 	]
 
-	deci-char-tests: reduce [
-		'deci-point? ""  		none
-		'deci-point? "."  		false
-		'deci-point? ".0" 		true
-		'deci-point? "0." 		true
-		'deci-point? "000" 		false
-		'deci-point? "#,00.00" 	true
-		'deci-point? "?,#,00.0" true
-		'deci-point? "#,00,00" 	false
-		'deci-point? "#.00,00" 	false
-		'deci-point? "-$ #.00,00" 	false
-		'deci-point? "-$ #,00.00" 	true
-		'deci-point? {"kr"-#,00.00} 	true
-		'deci-point? {-#.00,00"F"} 	false
-		'deci-point? {-#,00.00" F"} true
-		'deci-point? "($#,00.00)" 	true
-		'deci-point? "($#.00,00)" 	false
-		'deci-point? "-#'###'##0.0##'###'#" true
-		'deci-point? "-#'###'##0,0##'###'#" false
-		
-		'deci-comma? ""  		none
-		'deci-comma? ","  		false
-		'deci-comma? ",0" 		true
-		'deci-comma? "0," 		true
-		'deci-comma? "000" 		false
-		'deci-comma? "#.00,00" 	true
-		'deci-comma? "?.#.00,0" true
-		'deci-comma? "#.00.00" 	false
-		'deci-comma? "#,00.00" 	false
-		'deci-comma? "-$ #,00.00" 	false
-		'deci-comma? "-$ #.00,00" 	true
-		'deci-comma? {"kr"-#,00.00} false
-		'deci-comma? {-#.00,00" F"} true		; MUST put spaces inside quotes
-		'deci-comma? "($#,00.00)" 	false
-		'deci-comma? "($#.00,00)" 	true
-		'deci-comma? "-#'###'##0,0##'###'#" true
-		'deci-comma? "-#'###'##0.0##'###'#" false
-	]
-	foreach [name str res] deci-char-tests [
-		fn: get name
-		if res <> act: fn str [print [name "FAILED!" mold str 'expected res 'got act]]
-	]
 	
 	;!! Won't work for E notation numbers yet (>= 1.0e16, < 1e-5),
 	;!! because we rely on FORM. We can trick things on the small
@@ -500,39 +357,6 @@ formatting: context [
 			reverse num
 			reverse result
 		][result]
-	]
-	e.g. [
-		; Remember when testing this to reverse the strings being merged.
-		merge-number-mask "000" "123" 1
-		merge-number-mask/whole "0000" "123" 1
-		merge-number-mask "000?" "123" 1
-		merge-number-mask "000" "" 0
-		merge-number-mask "000#" "123" 1
-		merge-number-mask "+000" "123" -1
-		merge-number-mask "-000" "123" -1
-		merge-number-mask "-000" "123" 1
-		merge-number-mask "(000)" "123" -1
-		merge-number-mask "(000)" "123" 1
-
-		merge-number-mask/frac "(0.00)" "123" -1
-		merge-number-mask/frac "-00" "123" -1
-		merge-number-mask/frac "00" "123" -1
-
-		merge-number-mask/whole "0,000" "123" 1
-		merge-number-mask/whole "#,000" "123" 1
-		merge-number-mask/whole "#,000" "12345" 1
-		merge-number-mask/whole "## #0 00" "123" 1
-		merge-number-mask/whole "## #0 00" "1234" 1
-		merge-number-mask/whole "## #0 00" "12345" 1
-		merge-number-mask/whole "## ## ## #0 00" "123456789" 1
-		merge-number-mask/whole "00 00" "12345" 1
-		merge-number-mask/whole "00 ^#00" "12345" 1
-		merge-number-mask/whole {00 00 " text"} "12345" 1
-		merge-number-mask/whole {####00" text"} "12345" 1
-		merge-number-mask/whole {00 00 00" text"} "12345" 1
-		merge-number-mask/whole {"text " 00 00} "12345" 1
-			
-		merge-number-mask/whole "#.##0,000" "12345" 1
 	]
 	
 	;!! If we're going to remove extra group seps, we have to decide
@@ -653,91 +477,6 @@ formatting: context [
 		result
 	]
 
-	tests: context [
-		test: func [
-			value
-			fmt
-		][
-			print [mold value tab mold fmt tab mold format-number-with-mask value fmt]
-		]
-		specs: [
-			[-12345.67    " ######"        ]
-			[-12345.67    "-??????"        ]
-			[-12345.67    " 999999"        ]		; Extra space before sign
-			[-12345.67    "-000000"        ]
-			[-12345.67    "-$000 000.000" ]
-			[-12345.67    "-$999 999.999" ]
-			[-12345.67    "-$9_99_999.999" ]
-			[-12345.67    "$(999 999.999)" ]
-			[-12345.67    "$(### ###.999)" ]
-			[123456.78    "£+ 999,990.000"]
-			[123456.78    "£ 999,990.000"]
-			[-123456.78    "£ 999,990.000"]
-
-			[-12345.67    "-###,##0.000" ]
-			[-1234.67     "-###,##0.00?" ]
-			[-123.45      "-###,##0.000" ]
-			[-12345.67    "-#,##0.000" ]
-
-			[-12345.67    "-##.##0,000" ]
-			[-12345.67    "-#.##0,000" ]
-			
-			[12345.67    "-#,##0.000" ]			; FAIL! too-short masks are a problem
-			[12345.67    "#,##0.000" ]			; FAIL! too-short masks are a problem
-			[12345.67    "+#,##0.000" ]			; FAIL! too-short masks are a problem
-
-			[-12345.6789    "-#,###,##0.0##,###,#" ]  ; These cause issues. Can we support group
-			[-12345.6789    "-#.###.##0,0##.###.#" ]  ; seps in the fractional part with masks,
-			[-12345.6789    "-# ### ##0.0## ### #" ]  ; without things getting really ugly? The
-			[-12345.6789    "-#'###'##0.0##'###'#" ]  ; heuristics may not always win. Space and
-													  ; tick seps are OK.
-
-			[-12345.67    "-£##.##0,000"]
-			[-12345.67    {-##.##0,000" F"}]
-			[-12345.67    {"kr"-##.##0,000}]
-			[-12345.67    "€ ##.##0,000-"]
-			[-12345.67    "($##.##0,000)"]
-
-			[-12345.67    "-£##.###.##0,000"]
-			[-12345.67    {-##.###.##0,000" F"}]
-			[-12345.67    {"kr"-##.###.##0,000}]
-			[-12345.67    "€ ##.###.##0,000-"]
-			[-12345.67    "($##.###.##0,000)"]
-
-			[0.0001 "0"]
-			[0.0001 ".00000"]
-			[0.0001 "0.#"]
-			[0.0001 ".#"]
-			[0.0001 "0.#"]
-
-			[0.00000001 ".00000"]
-			[0.00000000000001 ".00000"]		; lower limit
-			
-	;		[-12345.67    "-£#.##0,000"]
-	;		[-12345.67    "-#.##0,000 F"]
-	;		[-12345.67    "kr-#.##0,000"]
-	;		[-12345.67    "€ #.##0,000-"]
-	;		[-12345.67    "($#.##0,000)"]
-
-			[.00001%    "#.000%" ]
-			[-.00001%    "#.000%" ]
-			[.4567%    "#.000%" ]
-			[-.4567%    "#.000%" ]
-			[1.4567%    "##,##0.000%" ]
-			[12.4567%    "##,##0.0#" ]
-			[123.4567%    "##,##0.000%" ]
-			[12345.6789%    "##,##0.000%" ]
-			[-123.4567%   "#,##0.000%" ]
-			[123.4567%    "##.##0,000%" ]
-			[-123.4567%   "#.##0,000%" ]
-
-		]
-		run: does [
-			print ""
-			foreach spec specs [test spec/1 spec/2]
-		]
-	]
-	tests/run
 
 	; 'via instead of 'with to make it clearer that this is different, for now.
 	set 'format-number-via-masks function [
@@ -828,19 +567,23 @@ formatting: context [
 		add-seps: :form-num-with-group-seps
 		switch name [
 			;The 'r- prefix stands for "round-trip/Ren/Redbol"
-			r-general r-standard [add-seps/with n r-sep]	; #'##0.0#
+			r-general
+			r-standard [add-seps/with n r-sep]	; #'##0.0#
 			r-fixed    [add-seps/with format-number-by-width n 1 2 r-sep]  ; #'##0.00
 			;r-currency [add-seps/with to money! n r-sep]                ; $#'##0.00
 			;r-money    [add-seps/with to money! n r-sep]                ; $#'##0.00
-			r-money r-currency [add-seps/with format-number-with-mask round/to n .01 "$#,##0.00" r-sep]                ; $#'##0.00  -$#'##0.00
+			r-money
+			r-currency [add-seps/with format-number-with-mask round/to n .01 "$#,##0.00" r-sep]                ; $#'##0.00  -$#'##0.00
 			r-percent  [add-seps/with format-number-by-width to percent! n 1 2 r-sep]
 			r-hex      [to-hex to integer! n]
 
-			general standard [add-seps n]	; #,##0.0#
+			general
+			standard [add-seps n]	; #,##0.0#
 			fixed    [add-seps format-number-by-width n 1 2]          ; #,##0.00
 			;currency [add-seps to money! n] ; $#,##0.00
 			;money    [add-seps to money! n] ; $#,##0.00
-			money currency [add-seps format-number-with-mask round/to n .01 "$#,##0.00"] ; $#,##0.00
+			money
+			currency [add-seps format-number-with-mask round/to n .01 "$#,##0.00"] ; $#,##0.00
 			percent  [add-seps format-number-by-width to percent! n 1 2]
 			;percent  [join add-seps next form to money! value * 100 #"%"]
 			;E scientific []	;Use standard scientific notation.
@@ -870,74 +613,6 @@ formatting: context [
 			; throw error - unknown named format specified?
 			;case else [either any-block? value [reform n] [form n]]
 		]
-	]
-	e.g. [
-		format-number-with-style 0 'r-general
-		format-number-with-style 0 'r-standard
-		format-number-with-style 0 'r-fixed
-		format-number-with-style 0 'r-currency
-		format-number-with-style 0 'r-money
-		format-number-with-style 0 'r-percent
-
-		format-number-with-style 0 'general
-		format-number-with-style 0 'standard
-		format-number-with-style 0 'fixed
-		format-number-with-style 0 'currency
-		format-number-with-style 0 'money
-		format-number-with-style 0 'percent
-
-		format-number-with-style 0 'hex
-		format-number-with-style 0 'min-hex
-		format-number-with-style 0 'C-hex
-		format-number-with-style 0 'bin
-		format-number-with-style 0 'min-bin
-		
-		format-number-with-style 0 'accounting
-
-		format-number-with-style 12345.678 'r-general
-		format-number-with-style 12345.678 'r-standard
-		format-number-with-style 12345.678 'r-fixed
-		format-number-with-style 12345.678 'r-currency
-		format-number-with-style 12345.678 'r-money
-		format-number-with-style 12345.678 'r-percent
-
-		format-number-with-style 12345.678 'general
-		format-number-with-style 12345.678 'standard
-		format-number-with-style 12345.678 'fixed
-		format-number-with-style 12345.678 'currency
-		format-number-with-style 12345.678 'money
-		format-number-with-style 12345.678 'percent
-
-		format-number-with-style 32767 'hex
-		format-number-with-style 32767 'min-hex
-		format-number-with-style 32767 'C-hex
-		format-number-with-style 32767 'bin
-		format-number-with-style 32767 'min-bin
-
-		format-number-with-style 12345.678 'accounting
-
-		format-number-with-style -12345.678 'r-general
-		format-number-with-style -12345.678 'r-standard
-		format-number-with-style -12345.678 'r-fixed
-		format-number-with-style -12345.678 'r-currency
-		format-number-with-style -12345.678 'r-money
-		format-number-with-style -12345.678 'r-percent
-
-		format-number-with-style -12345.678 'general
-		format-number-with-style -12345.678 'standard
-		format-number-with-style -12345.678 'fixed
-		format-number-with-style -12345.678 'currency
-		format-number-with-style -12345.678 'money
-		format-number-with-style -12345.678 'percent
-
-		format-number-with-style -12345.678 'hex
-		format-number-with-style -12345.678 'min-hex
-		format-number-with-style -12345.678 'C-hex
-		format-number-with-style -12345.678 'bin
-		format-number-with-style -12345.678 'min-bin
-
-		format-number-with-style -12345.678 'accounting
-		
 	]
 
 	; The printf model of total.deci lengths is unintuitive. It seems more
@@ -975,42 +650,6 @@ formatting: context [
 			pad-aligned value either left ['left]['right] tot-len ch
 		]
 	]
-	e.g. [
-		format-number-by-width 0 0 0
-		format-number-by-width 1 0 0
-		format-number-by-width 123.456 0 0
-		format-number-by-width -123.456 0 0
-
-		format-number-by-width 10.5% 0 0
-		format-number-by-width -10.5% 0 0
-		format-number-by-width/with -10.5% 8 2 #"0"
-
-		format-number-by-width/with -10.5 8 2 #"0"
-		format-number-by-width/with/use+ 10.5 8 2 #"0"
-		format-number-by-width/with/left 10.5 8 2 #"0"
-		format-number-by-width/with 10.5 8 2 #"0"
-
-		format-number-by-width/with -10.5 8 2 #"0"
-		format-number-by-width/with -10.5 8 2 #"_"
-		format-number-by-width/with -10.5% 8 2 #"0"
-		format-number-by-width/with/use+ 10.5 8 2 #"_"
-
-		format-number-by-width 0 5 0
-		format-number-by-width 1 5 0
-		format-number-by-width 123.456 5 0
-		format-number-by-width -123.456 5 0
-		format-number-by-width 123.456 5 2
-		format-number-by-width -123.456 5 2
-
-		format-number-by-width 123.456 10 0
-		format-number-by-width -123.456 10 0
-		format-number-by-width/left 123.456 10 2
-		format-number-by-width/right -123.456 10 2
-		
-		format-number-by-width/left/use+ 123.456 10 2
-		format-number-by-width/right/use+ 123.456 10 2
-		
-	]
 	
 ] ; end of formatting context
 
@@ -1018,7 +657,7 @@ formatting: context [
 ;-------------------------------------------------------------------------------
 ;-------------------------------------------------------------------------------
 
-halt
+;halt
 
 
 ;-------------------------------------------------------------------------------
@@ -1349,7 +988,7 @@ comment {
 
 
 set 'format-value func [
-	value [number! money! none! date! time! logic! any-string!]
+	value [number! none! time! logic! any-string!] ; money! date! 
 	fmt   [word! string! block!] "Named or custom format"
 	/local type
 ] [
