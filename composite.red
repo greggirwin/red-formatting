@@ -52,19 +52,32 @@ composite-ctx: context [
 
 ]
 
-print mold composite ""
-print mold composite ":(1):"
-print mold composite ":(pi):"
-print mold composite ":(rejoin ['a 'b]):"
-print mold composite "a:('--):b"
-print mold composite "a:('--):"
-print mold composite ":('--):b"
-print mold composite "ax:(1 / 0):xb"
-print mold composite/hide-errors "ax:(1 / 0):xb"
-print mold composite ":("
-print mold composite ":('end"
-print mold composite "):"
-print mold composite ")::("
+test-composite: func [input][
+	print [mold input "==" mold composite input]
+]
+test-composite-no-err: func [input][
+	print [mold input "==" mold composite/hide-errors input]
+]
+
+print "Composite"
+foreach val [
+	""
+	":(1):"
+	":(pi):"
+	":(rejoin ['a 'b]):"
+	"a:('--):b"
+	"a:('--):"
+	":('--):b"
+	"ax:(1 / 0):xb"
+	":("
+	":('end"
+	"):"
+	")::("
+][test-composite val]
+
+print "^/Composite/hide-errors"
+
+test-composite-no-err "ax:(1 / 0):xb"
 
 
 halt
