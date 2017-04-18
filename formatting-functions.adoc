@@ -1,0 +1,259 @@
+= Formatting Functions - draft
+:imagesdir: /images
+:toc:
+:numbered:
+
+# https://powerman.name/doc/asciidoc
+
+== Introduction
+
+The purpose of this document is to: 
+
+* Provide an overview of goals, design ideas, and considerations
+* Show examples of function use, dialects, and output
+* Raise questions about what features to support
+
+# _**XXX is far from being implemented, mention it here?**_
+
+== Overview
+
+While chatting with Nenad about a formatting system, the basic goals he
+outlined were:
+
+	printf() from C + format$() from VB, on steroids for Red 
+	(working on as many datatypes as possible).
+	
+	We also want possible column-oriented formatting, to make 
+	it easy to ouput tabular data. So a pad or align command 
+	would be required. Could this be done with a second dialect
+	that takes a list of column specs and generates format
+	strings?
+
+I have an old R2 `format` function that was inspired by VB's `format$`
+function patterns, which grew out of BASIC's `print using`, and is also
+used in many spreadsheets for cell formatting. I first thought I would
+just port that code to Red, but it had a lot of assumptions built in,
+had no concept of international formatting, and was designed for my 
+needs, not those of a wider community.
+
+Printf support, as a goal, also seemed easy enough. I wrote a basic
+`printf` parser and let that sit. Once I got more work done on mask-
+based formatting, and stepped back to look at things from the top,
+it became clear that supporting traditional `printf` syntax wasn't a
+good fit. For example, conversion specifiers are not needed, because
+we have a rich type system to drive that, which also makes the hash(#)
+flag obsolete. The `%` sigil also doesn't work well, because Red uses
+that for `file!` values. A similar problem faces the standard `$` 
+sigil used for string interpolation in other languages. Red will use
+that for `money!` values.
+
+The design process is both top down and bottom up. Start with ideas
+and examples from a user's perspective, then build a bit to support
+one aspect. Find issues you didn't consider from the outside, move
+back up and revisit assumptions, build another piece. See how those
+two pieces fit together in a larger picture, and where your blue
+sky design falls apart. Only by building things will you start to 
+really feel what works, what doesn't, and where the most devilish
+details start to pop up.
+
+== Use Cases
+
+- Format single values
+- Format a block of values
+- Support formats suited to each datatype
+- Interpolate formatted values into a block
+- Interpolate values in a string
+- Create a formatted row
+- Create a formatted column
+- Create a table
+- Generate values in report templates (build-markup)
+- Format cells in spreadsheets
+- Format given a mask
+- Format given a width
+- Format a number given whole and fraction/decimal widths?
+- Format a number given total and fraction/decimal widths
+- Allow fill string and alignment overrides
+- Support international formatting
+- Support named formats
+
+== Goals and Design Decisions
+
+I looked at a lot of formatting systems over time, and they all
+boil down to a few main paradigms, each just adding their own
+flavor and features. VB and COBOL use mask-based formatting
+(called a PICture clause in COBOL). C, Common Lisp, and...everything
+that followed suit, uses a very terse command string to define the
+total width of a field, number of decimal places, and a few other
+rudimentary options (e.g., sign and fill char). The third paradigm
+is parameterized masks or forms. .NET and Wolfram both use this 
+approach. Add localization and exact/inexact number support, and
+you have a wide range of combinations.
+
+One goal, then, is to make the options managable and usable. Another
+is to make them flexible. A third is to keep things simple. Pick any
+two.
+
+The draft submission for a `format` design won't be exhaustive. There
+are a lot of details yet to be covered. What I hope to do is lay the
+foundation for a design that allows new features to be added as needs
+are discovered.
+
+Another important element is taste. You may not like mine. In some
+ways I want to push the boundaries forward, in others I want to limit
+them. For example, Red is a data language, and highly symbolic. We
+don't often exercise that, but it's there. Because of that, I think
+Wolfram is an important system to learn from. On the other hand, C
+(and `printf`) herald from a system level view, which I think holds 
+less value in Red. For example, `printf` has no concept of group
+separators in numbers. Those are helpful, even for programmers. Why
+would you *not* include them?
+
+There is the issue of internationalization. We can format the data
+for ourselves, but someone else may be looking at it in another part
+of the world, and ambiguity can be a terrible thing. Leaving out
+group separators doesn't solve the problem, because the decimal 
+point may still be a dot/full-stop or a comma. What we need, then,
+is a universal numeric format that is unambiguous. We can also call
+this a "round-trip" form and is, coincidentally, natively supported
+by Red.
+
+We can't force people to do the right thing. All we can do is make
+the right thing really easy to do, and discourage bad behavior.
+As you read the notes here, or evaluate the draft code, keep that
+in mind. The goal is not to be all things to all people, or to 
+support existing formats because blub programmers will be happy to
+see it and may adopt Red (they won't). 
+
+=== General dialect thoughts.
+
+- Sigils should be chosen for use in a Red context, not simply
+taken from other languages. This is important. We can't judge
+things too quickly, because they're unfamiliar, but still have to 
+acknowledge when certain characters make things look like noise.
+
+- A lot of history exists for formatting layouts and patterns.
+That should not be ignored. The primary driver here, for me, is
+spreadsheets. And while we're thinking at the code level, there
+will almost certainly come a time when an format editor tool 
+will be built.
+
+- We aren't designing for a single target audience or use case.
+As programmers, we may think that something like `printf` is
+enough, and everything beyond that is just bloat and wasted code.
+If you've ever had to write formatted output for business use,
+you know this is not the case, and a *huge* amount of effort goes
+into the tiny details. To this end, we won't have a single dialect
+that covers all our needs, even if there ends up being a single
+`format` function that is an entry point.
+
+== Contexts and Functions
+
+
+
+=== Composite
+
+The name of the function (`composite`) is tricky. Rebol calls this
+`build-markup`, which isn't bad, but defines a more limited view of its 
+use, as well as implying that you are building the markup itself, when
+the markup is really the template you're filling in. 
+
+We want a word that says it operates on a single argument, so things like
+`intersperse`, `substitute`, and `interject` don't read as well to me. It sounds
+like they take something(s) to insert. `Inset` is too close to `insert`. Another
+option is a neologism, like `interform`, which implies both putting a thing in a
+place, and `form`ing it. `Composite` is generally used as a term related to
+image processing, which is a possible point of confusion. It is also both a noun
+and a verb, which works well in this case.
+
+There isn't much to this function in the way of design, with only a couple
+major decisions to be made:
+
+1. What are the start/end markers for substitution expressions.
+2. What do we do in the case of mismatched markers.
+
+> "Replace :( ... ): sections with their evaluated results."
+
+The `:( ... ):` markers already have meaning in Red. Colons are used to
+get and set values, and parens indicate evaluation.
+
+Putting the colons on the outside gives you a clean paren expression on the
+inside. Rebol used `<% ... %>` as its markers, inspired by PHP I think, and
+comfortable for tag-people I suppose. 
+
+One of the big questions is what to do if there are mismatched expr markers. We
+can treat them as errors, or just pass through them, so they will be visible in
+the output. We can support both behaviors with a refinement, and then just need
+to choose the default.
+
+Examples:
+
+....
+Composite
+    ""              == ""
+    ":(1):"         == "1"
+    ":(pi):"        == "3.141592653589793"
+    ":(rejoin ['a 'b]):" == "ab"
+    "a:('--):b"     == "a--b"
+    "a:('--):"      == "a--"
+    ":('--):b"      == "--b"
+    "ax:(1 / 0):xb" == "ax *** Error: zero-divide Where: 1 / 0 *** xb"
+    ":("            == ":("
+    ":('end"        == ":('end"
+    "):"            == "):"
+    ")::("          == ")::("
+
+Composite/hide-errors
+    "ax:(1 / 0):xb" == "axxb"
+....
+
+
+== Values
+
+== Interpolation
+
+== Format Styles (Named formats)
+
+Long format masks don't work well in interpolated strings, and are a pain
+to type repeatedly. Terse, short-format specs aren't always immediately
+clear in what their output looks like. The strengths of one are the 
+weaknesses of the other. The solution I'm moving toward is "named styles".
+It's not a new concept, but the approach I've taken is more like using
+style sheets than trying to build in every style and locale combination.
+The library of them will naturally grow over time, and may become standard,
+especially in larger internationalized systems. The standard system should
+cover basic needs, and allow users to easily extend it.
+
+
+== Masks
+
+    "#,##0.00"
+....
+    <preformatted table data here>
+    colA    ColB
+    
+    Row1A   Row1B
+....
+
+== Short Formats (ala `printf`)
+
+Short-formats are like `printf`, but not exactly the same:
+- Flags are "<>_+0Zz" = [left-align right-align space-for-+  +-for-+  zero-fill zero-fill]
+  0 is a bit confusing in some cases, because it could be the last flag char, but
+  then you may have leading 0s in the width, that follows. Have to decide if
+  it's worth keeping.
+- Width+precision are [m][.n] 
+
+The sigil is the hardest thing to choose. `%` is for files in Red. I like `:`,
+since it is like `get-word!` syntax, implying that we're getting a value to
+interpolate into a string. If we also end the format with it, it's a get-set op,
+implying getting a value and applying the format to it. The other big question
+is whether short-format strings need to be structured. e.g. :[...]: or :(...):.
+I think those apply to string interpolation, not single value short format
+applications.
+
+The biggest downside to `:` as a sigil is time values.
+Alt sigil ideas: _=&@! But I don't really care for any of them.
+I don't like ~ or ` as sigil options either.
+
+
+
