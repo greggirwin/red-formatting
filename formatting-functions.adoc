@@ -3,7 +3,10 @@
 :toc:
 :numbered:
 
+////
 # https://powerman.name/doc/asciidoc
+# _**XXX is far from being implemented, mention it here?**_
+////
 
 == Introduction
 
@@ -13,7 +16,6 @@ The purpose of this document is to:
 * Show examples of function use, dialects, and output
 * Raise questions about what features to support
 
-# _**XXX is far from being implemented, mention it here?**_
 
 == Overview
 
