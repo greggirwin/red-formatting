@@ -99,6 +99,26 @@ short-format-ctx: context [
 
 	flag?: func [spec [block! object!] flag [char!]][find spec/flags flag]
 
+	get-path-key: function [
+		"Return a value for a path/key, either in data or the global context"
+		data [block! object! map!]
+		key [path!]
+	][
+		; First, try to find the key in the data we were given.
+		; Failing that, try to get it from the global context.
+		; That may also fail. Now/time is a special failure case,
+		; but we may also get a 'no-value error. If that happens
+		; when trying to GET it, there's no point in DOing it.
+		val: try [get append to path! 'data key]
+		if all [error? val  find [bad-path-type invalid-path] val/id] [
+			val: try [get key]					; now/time, e.g., fails here
+			if all [error? val  val/id = 'invalid-path-get][
+				val: try [do key]
+			]
+		]
+		val
+	]
+	
 	one-spec?: func [data [block!]][all [1 = length? data  object? data/1]]
 	
 	pad-aligned: func [str [string!] align [word!] wd [integer!] ch][
@@ -201,21 +221,7 @@ short-format-ctx: context [
 							none?    item/key [first+ data]			; unkeyed field, take sequentially from data
 							integer? item/key [pick data item/key]	; index key
 							paren?   item/key [do-paren item/key]	; expression to evaluate
-							path?    item/key [						; deep key
-								; First, try to find the key in the data we were given.
-								; Failing that, try to get it from the global context.
-								; That may also fail. now/time is a special failure case,
-								; but we may also get a 'no-value error. If that happens
-								; when trying to GET it, there's no point in DOing it.
-								val: try [get append to path! 'data item/key]
-								if all [error? val  find [bad-path-type invalid-path] val/id] [
-									val: try [get item/key]			; now/time, e.g., fails here
-									if all [error? val  val/id = 'invalid-path-get][
-										val: try [do item/key]
-									]
-								]
-								val
-							]
+							path?    item/key [get-path-key data item/key]	; deep key
 							'else [									; simple key name
 								;?? Do we want to allow functions? I'm not so sure.
 								val: select data item/key
