@@ -17,7 +17,7 @@ short-format-ctx: context [
 	; Named formats
 	format-proto: context [
 		key:	; No key means take the next value; /n means pick by index if int or key if not int; 
-		flags:	; 0 or more of "<> +0Z"
+		flags:	; 0 or more of "<>_+0Z"
 		width:	; Minimum total field width
 		prec:   ; Maximum number of decimal places (may be less, not zero padded on right)
 			none
@@ -374,7 +374,3 @@ short-format-ctx: context [
 	]
 ]
 
-short-format-ctx/tests/run-parse-tests
-short-format-ctx/tests/run-apply-tests
-short-format-ctx/test-apply ":5" 123.456
-halt
