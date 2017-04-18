@@ -160,7 +160,7 @@ short-format-ctx: context [
 	][
 		to logic! all [
 			res: parse-as-short-format input
-			find res block!
+			any [object? res  find res object!]		; single object or block that has at least one object
 		]
 	]
 
@@ -176,7 +176,7 @@ short-format-ctx: context [
 	]
 
 	set 'short-form function [
-		"Substitute and format values into a template string"
+		"Format and substitute values into a template string"
 		string [string!] "Template string containing `/value:format` fields and literal data"
 		data "Value(s) to apply to template fields"
 	][
@@ -209,7 +209,7 @@ short-format-ctx: context [
 								; when trying to GET it, there's no point in DOing it.
 								val: try [get append to path! 'data item/key]
 								if all [error? val  find [bad-path-type invalid-path] val/id] [
-									val: try [get item/key]	; 'now/time is an example of something that fails here.
+									val: try [get item/key]			; now/time, e.g., fails here
 									if all [error? val  val/id = 'invalid-path-get][
 										val: try [do item/key]
 									]
