@@ -5,8 +5,8 @@ do %composite.red
 test-composite: func [input][
 	print [mold input "==" mold composite input]
 ]
-test-composite-no-err: func [input][
-	print [mold input "==" mold composite/hide-errors input]
+test-composite-custom-err: func [input][
+	print [mold input "==" mold composite/err-val input "#ERR"]
 ]
 
 print "Composite"
@@ -19,15 +19,23 @@ foreach val [
 	"a:('--):"
 	":('--):b"
 	"ax:(1 / 0):xb"
+
+	"a :('--): b"
+	"a :('--):"
+	":('--): b"
+	"ax :(1 / 0): xb"
+
 	":("
 	":('end"
 	"):"
 	")::("
 ][test-composite val]
 
-print "^/Composite/hide-errors"
+print "^/Composite/custom-error-val"
 
-test-composite-no-err "ax:(1 / 0):xb"
+test-composite-custom-err "ax:(1 / 0):xb"
+test-composite-custom-err "ax :(1 / 0): xb"
+
 
 
 halt

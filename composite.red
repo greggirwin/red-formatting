@@ -11,13 +11,11 @@ composite-ctx: context [
 	eval: func [
 		"Evaluate expr and return the result"
 		expr [string!] "Valid Red, as a string expression"
-		hide-err [logic!] "Return empty string instead of error information"
+		err-val "If not none, return this instead of formed error information, if eval fails"
 		/local res
 	][
 		either error? set/any 'res try [do expr][
-			either hide-err [""][
-				form reduce [" *** Error:" res/id "Where:" expr "*** "]
-			]
+			any [err-val  form reduce [" *** Error:" res/id "Where:" expr "*** "]]
 		][
 			either unset? get/any 'res [""][:res]
 		]
@@ -35,14 +33,14 @@ composite-ctx: context [
 	set 'composite func [
 		"Replace :( ... ): sections with their evaluated results."
 		data [string! file! url!]
-		/hide-errors "Suppress error output"
+		/err-val e "Use instead of formed error info from eval error"
 		/local expr
 	][
 		data: either string? data [copy data] [read data]	; Don't modify the input
 		parse data [
 			any [
 				end break
-				| change [expr-beg= copy expr to expr-end= expr-end=] (eval expr hide-errors)
+				| change [expr-beg= copy expr to expr-end= expr-end=] (eval expr e)
 				| expr-beg= to end
 				| to expr-beg=
 			]
