@@ -21,9 +21,10 @@ short-format-ctx: context [
 	; Named formats
 	format-proto: context [
 		key:	; No key means take the next value; /n means pick by index if int or key if not int; 
-		flags:	; 0 or more of "<>_+0Z"
+		flags:	; 0 or more of "<>_+0Zº$¤"
 		width:	; Minimum TOTAL field width
 		prec:   ; Maximum number of decimal places (may be less, not zero padded on right)
+		style:	; Named format
 			none
 	]
 
@@ -31,20 +32,24 @@ short-format-ctx: context [
 	=flags:
 	=width:
 	=prec:
+	=style:
 	=plain:
 	=parts:
 		none
 			
 	digit=:     charset "0123456789"
-	flag-char=: charset "_+0<>Zz"
+	flag-char=: charset "_+0<>Zzº$¤"			; º=186=ordinal  ¤=164=currency
 	key-sigil=: #"/"
 	fmt-sigil=: #":"	; _=&@!
+	sty-sigil=: #"'"
 	sigil=: [key-sigil= | fmt-sigil=]
 	esc-sigil=: ["^^" [#":" (append =parts ":") | "/" (append =parts "/")]]
 	flags=: [copy =flags some flag-char=]
 	width=: [#"*" (=width: none) | copy =width some digit= (=width: to integer! =width)]
 	prec=:  [#"." [#"*" (=prec: none) | copy =prec some digit= (=prec: to integer! =prec)]]
-	end-key=: [#":" | #" "]
+	end-key=:   [#":" | #" " | end]
+	end-style=: [#":" | #" " | #"/" | end]
+	style=: [sty-sigil= copy =style to end-style= (=style: to lit-word! =style)]
 	key=: [
 		key-sigil= [
 			[copy =key some digit= (=key: to integer! =key)]			; produce int index
@@ -56,17 +61,20 @@ short-format-ctx: context [
 		]	
 	]
 	
-	; `/[key][:[flags][width][.precision]]`
-	; `:[flags][width][.precision]`
+	; `/[key][:[flags][width][.precision]]['style]`
+	; `:[flags][width][.precision]['style]`
+	; `:[flags]['style]`
 	; there may be (in this order) zero or more flags, an optional minimum 
 	; field width, an optional precision and an optional length modifier.
-	fmt=: [fmt-sigil= opt flags= opt width= opt prec=]
+	fmt=: [fmt-sigil= opt flags= opt width= opt prec= opt style=]
 	
 	field=: [
-		(=flags: =width: =prec: =key: none)
+		(=flags: =width: =prec: =key: =style: none)
 		[key= opt fmt= | fmt=] (
+			;if find =flags #"º" [=style: quote 'ordinal]
+			if find =flags charset "$¤" [=style: quote 'money]
 			append/only =parts make format-proto compose [
-				key: :=key flags: (=flags) width: (=width) prec: (=prec)
+				key: :=key flags: (=flags) width: (=width) prec: (=prec) style: (=style)
 			]
 		)
 	]
@@ -110,7 +118,7 @@ short-format-ctx: context [
 		; but we may also get a 'no-value error. If that happens
 		; when trying to GET it, there's no point in DOing it.
 		val: try [get append to path! 'data key]
-		if all [error? val  find [bad-path-type invalid-path] val/id] [
+		if all [error? val  find [bad-path-type invalid-path no-value] val/id] [
 			val: try [get key]					; now/time, e.g., fails here
 			if all [error? val  val/id = 'invalid-path-get][
 				val: try [do key]
@@ -147,31 +155,35 @@ short-format-ctx: context [
 	;---------------------------------------------------------------------------
 	;-- Public
 	
+	apply-format-style: func [v style][mold :v]	; TBD
+	
 	set 'apply-short-format function [
 		"Apply a format spec to a single value"
 		spec  [block! object!] "Must support [flags width prec] keys"
 		value
 		return: [string!]
 	][
-		fill-ch: either any [flag? spec #"0" flag? spec #"Z"][#"0"][#" "]	;TBD 0 or Z?
-		align: either flag? spec #"<" ['left]['right]
-		either not number? value [
-			value: form any [:value ""]							; coerce none to ""; form to prevent arg modifcation
-			either none? spec/width [value][pad-aligned value align spec/width fill-ch] 
-		][
-			; The sign is always left justified with this approach.
-			rejoin [
-				sign-from-flags spec value						; Sign comes first
-				(
-					if integer? prec: spec/prec [				; If we have a precision...
-						if percent? value [prec: add prec 2]	; Scale precision for percent! values
-						value: round/to value 10 ** negate prec	; Round the number so we can just mold it
-					]
-					value: mold absolute value					; Note: absolute; no sign here
-					either none? spec/width [value][pad-aligned value align spec/width fill-ch]
-				)
+		; Prep
+		if number? value [
+			if integer? prec: spec/prec [							; If we have a precision...
+				if percent? value [prec: add prec 2]				; Scale precision for percent! values
+				value: round/to value 10 ** negate prec				; Round the number so we can just mold it
 			]
 		]
+		; Form
+		value: case [
+			spec/style [apply-format-style value spec/style]		; A named format style was used
+			not number? value [form any [:value ""]]				; Coerce none to ""; form to prevent arg modifcation
+			'else [
+				suffix: either all [integer? value  flag? spec #"º"] [ordinal-suffix value][""]
+				sign-ch: sign-from-flags spec value							; Sign is always left justified with this approach
+				rejoin [sign-ch mold absolute value suffix]			; Note: absolute; no sign here
+			]
+		]
+		; Pad
+		fill-ch: either any [flag? spec #"0" flag? spec #"Z"] [#"0"][#" "]	;TBD 0 or Z?
+		align:   either flag? spec #"<" ['left]['right]
+		either none? spec/width [value][pad-aligned value align spec/width fill-ch]
 	]
 
 	set 'looks-like-short-format? function [
@@ -205,7 +217,7 @@ short-format-ctx: context [
 		if object? spec [return apply-short-format spec data]		; We got a single format spec
 		collect/into [
 			foreach item spec [
-				keep either string? item [item] [					; literal data from template string
+				keep either string? item [item][					; literal data from template string
 					; If we allow objects and maps to be used, so you can select by
 					; key, they won't work for format-only fields or numeric index
 					; access.

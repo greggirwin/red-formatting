@@ -1,5 +1,6 @@
 ﻿Red []
 
+do %format.red			; only needed for ordinal-suffix right now.
 do %short-format.red
 
 tests: context [
@@ -35,6 +36,7 @@ tests: context [
 		":+<>0_*.*" ; multi flags
 		"0:*.*"
 		"Color :s, number1 :d, number2 :05, float :5.2.\n"
+		":/5"
 		"/a"
 		"/1"
 		"/num:20.10"
@@ -42,6 +44,19 @@ tests: context [
 		"/abc:xyz"
 		"/a/b/c:xyz"
 		"/(code here)xyz"
+
+		":º"
+		":$"
+		":¤"
+		
+		":>'fixed"
+		":'money"
+		"/num:+<>Z_5.2'general"
+		"/abc:'ordinal xyz"
+		"/abc:'hex:<5.2"
+		"/abc:'hex:xyz"
+		"/a/b/c:'binary/key-x"
+		"/(code here):'base-64 "
 	]
 	run-parse-tests: does [
 		print ""
@@ -74,7 +89,7 @@ tests: context [
 		":<10"          123.456
 		":>10"          123.456
 		":10"           123.456
-		":/5"           123.456
+		":/5"           123.456		; XXX dupes value in output
 		":.5"           123.456
 		":07.1"         123.456
 		":010.1"        123.456		; This is confusing, with 0 as a flag
@@ -103,6 +118,12 @@ tests: context [
 		":8.2" -10.5
 		":Z8.2" -10.5
 		":<8.2" -10.5
+		":º" 1
+		":º" 2
+		":º" 3
+		":º" 4
+		":º" 15
+		":º" 123
 
 		"Color :<10, number1 :3, number2 :05, float :<5.2.\n" ["Red" 2 3 -45.6]
 
@@ -111,6 +132,10 @@ tests: context [
 		; "Color &<10, number1 &3, number2 &05, float &<5.2.\n" ["Red" 2 3 -45.6]
 		; "Color @<10, number1 @3, number2 @05, float @<5.2.\n" ["Red" 2 3 -45.6]
 		; "Color !<10, number1 !3, number2 !05, float !<5.2.\n" ["Red" 2 3 -45.6]
+
+		"Color :'col-1| idx3 /3:'acct| num2 /N2:<'general| pi /system/words/pi:<'fixed| /(1 + 1) /now/time" [
+			"Red" n2 2 3 n4 -45.6
+		]
 		
 		"Color :<5| idx3 /3:Z3| num2 /N2:<5| pi /system/words/pi:<5.2| /(1 + 1) /now/time" [
 			"Red" n2 2 3 n4 -45.6
@@ -121,7 +146,7 @@ tests: context [
 		])
 
 		; named fields in an block
-		"First^^: /first:<8| Last^^: /last:8| phone^^: /phone" [
+		"First^^: /first:<8| Last^^: /last:8| phone^^: /phoneX" [
 			first: "Gregg" last: "Irwin" phone: #208.461.9999
 		]
 
@@ -131,7 +156,7 @@ tests: context [
 		]
 
 		; named fields in an object
-		"First^^: /first:<8| Last^^: /last:8| phone^^: /phone" (context [
+		"First^^: /first:<8| Last^^: /last:8| phone^^: /phoneX" (context [
 			first: "Gregg" last: "Irwin" phone: #208.461.9999
 		])
 
@@ -141,7 +166,7 @@ tests: context [
 		])
 
 		; named fields in a map
-		"First^^: /first:<8| Last^^: /last:8| phone^^: /phone" #(
+		"First^^: /first:<8| Last^^: /last:8| phone^^: /phoneX" #(
 			first: "gregg" last: "irwin" phone: #208.461.0000
 		)
 
