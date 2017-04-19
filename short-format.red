@@ -35,6 +35,7 @@ short-format-ctx: context [
 	=style:
 	=plain:
 	=parts:
+	=esc:
 		none
 			
 	digit=:     charset "0123456789"
@@ -43,7 +44,11 @@ short-format-ctx: context [
 	fmt-sigil=: #":"	; _=&@!
 	sty-sigil=: #"'"
 	sigil=: [key-sigil= | fmt-sigil=]
-	esc-sigil=: ["^^" [#":" (append =parts ":") | "/" (append =parts "/")]]
+		;| "^^" [#":" (append =parts ":") | "/" (append =parts "/")]
+	esc-sigil=: [
+		[copy =esc [": " | "://" | "/ "] | "^^" copy =esc [":" | "/"]]
+		(append =parts =esc)
+	]
 	flags=: [copy =flags some flag-char=]
 	width=: [#"*" (=width: none) | copy =width some digit= (=width: to integer! =width)]
 	prec=:  [#"." [#"*" (=prec: none) | copy =prec some digit= (=prec: to integer! =prec)]]
@@ -81,10 +86,7 @@ short-format-ctx: context [
 	;TBD: support :// as plain text for urls.
 	plain=: [
 		(=plain: none)
-		copy =plain ;[
-			; [": " | "://" | "/ "]
-			to [sigil= | #"^^" | end] (append =parts =plain)
-		;]
+		copy =plain to [sigil= | #"^^" | end] (append =parts =plain)
 	]
 	;plain=: [(=plain: none) copy =plain some [not sigil=] (append =parts =plain)]
 	format=: [
@@ -190,8 +192,6 @@ short-format-ctx: context [
 			not number? :value [form any [:value ""]]				; Coerce none to ""; form to prevent arg modifcation
 			'else [
 				suffix: either all [integer? value  flag? spec #"º"] [ordinal-suffix value][""]
-				;sign-ch: sign-from-flags spec value
-				;rejoin [sign-ch mold absolute value suffix]			; Note: absolute; no sign here
 				append mold absolute value suffix					; Note: absolute; no sign here
 			]
 		]
@@ -246,12 +246,7 @@ short-format-ctx: context [
 							integer? item/key [none]				; can't pick from this kind of data
 							paren?   item/key [do-paren item/key]	; expression to evaluate
 							path?    item/key [get-path-key data item/key]	; deep key
-							'else [									; simple key name
-								attempt [do item/key]
-								;;?? Do we want to allow functions? I'm not so sure.
-								;val: select data item/key
-								;either any-function? :val [val][val]
-							]
+							'else             [attempt [do item/key]]		; simple key name
 						]
 					][
 						; Something interesting to consider here is whether key lookups

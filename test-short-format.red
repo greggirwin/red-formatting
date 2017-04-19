@@ -20,6 +20,7 @@ tests: context [
 		":"
 		"::"
 		"^^:"
+		"^^:^^:"
 		"test"
 		":*.*d"
 		":20.10d"
@@ -58,6 +59,8 @@ tests: context [
 		"/abc:'hex:xyz"
 		"/a/b/c:'binary/key-x"
 		"/(code here):'base-64 "
+		
+		"Color: :<10, number1/ :3, http://:05, float: :<5.2"
 	]
 	run-parse-tests: does [
 		print ""
@@ -141,6 +144,9 @@ tests: context [
 		": /(1 + 1) :" 123.456
 
 		"Color :<10, number1 :3, number2 :05, float :<5.2.\n" ["Red" 2 3 -45.6]
+
+		; colon-slash escapes
+		"Color: :<10, number1/ :3, http://:2, float: :<5.2" ["Red" 3 8080 -45.6]
 
 		; "Color _<10, number1 _3, number2 _05, float _<5.2.\n" ["Red" 2 3 -45.6]
 		; "Color =<10, number1 =3, number2 =05, float =<5.2.\n" ["Red" 2 3 -45.6]
