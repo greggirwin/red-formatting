@@ -255,12 +255,24 @@ cover basic needs, and allow users to easily extend it.
 
 == Short Formats (ala `printf`)
 
-Short-formats are like `printf`, but not exactly the same:
+Short-formats are like `printf`, but not exactly the same. Don't compare
+the output to `printf` as a point of reference.
 
-- Flags are "<>_+0Zz" = [left-align right-align space-for-+  +-for-+  zero-fill zero-fill]
+NOTE: The exact behavior isn't nailed down on this yet. The current implementation
+      allows the deci point to float, based on value, precision, and alignment.
+      That's how printf seems to do it, at least some of them. It feels like
+      spec'ing a precision should make that part fixed.
+
+- Flags are "<>_+0Zz$¤º"
+  [left-align right-align space-for-+  +-for-+  zero-fill(0Zz) money($¤) ordinal]
   0 is a bit confusing in some cases, because it could be the last flag char, but
   then you may have leading 0s in the width, that follows. Have to decide if
-  it's worth keeping.
+  it's worth keeping. `¤` is not a well-known character but is a universal currency
+  symbol, but `$` is most universal. If we want to use something that is replaceable,
+  for localization, and clearly not USD, `¤` makes sense. Otherwise `$` seems best.
+  `£` and `€` are the next most common characters to consider, but suffer the same
+  specificity problem as `$`. Rebol supports 3-letter ISO4217 codes on money! vals.
+  See: https://en.wikipedia.org/wiki/Currency_sign_(typography)
 
 - Width+precision are [m][.n] 
 
