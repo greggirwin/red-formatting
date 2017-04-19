@@ -212,8 +212,15 @@ Composite
     "):"                    == "):"
     ")::("                  == ")::("
 
-Composite/hide-errors
-    "ax:(1 / 0):xb" == "axxb"
+    ; With spaces around the expressions
+	"a :('--): b"           == "a -- b"                                             
+	"a :('--):"             == "a --"                                                 
+	":('--): b"             == "-- b"                                                 
+	"ax :(1 / 0): xb"       == "ax  *** Error: zero-divide Where: 1 / 0 ***  xb"
+
+Composite/custom-error-val
+    "ax:(1 / 0):xb"         == "ax#ERRxb"
+    "ax :(1 / 0): xb"       == "ax #ERR xb"
 ....
 
 
