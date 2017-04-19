@@ -57,7 +57,7 @@ short-format-ctx: context [
 			; get some untrusted data being used. We could easily limit
 			; the length or have a secure mode lock on by default though.
 			| [copy =key [#"(" thru #")"] (=key: load =key)]			; produce paren!
-			| [copy =key to [end-key= skip  | end] (=key: load =key)]	; produce other key	(word, path, etc.)
+			| [copy =key to [end-key= skip  | end] (=key: either empty? =key [none][load =key])]	; produce other key	(word, path, etc.)
 		]	
 	]
 	
@@ -79,7 +79,13 @@ short-format-ctx: context [
 		)
 	]
 	;TBD: support :// as plain text for urls.
-	plain=: [(=plain: none) copy =plain to [sigil= | #"^^" | end] (append =parts =plain)]
+	plain=: [
+		(=plain: none)
+		copy =plain ;[
+			; [": " | "://" | "/ "]
+			to [sigil= | #"^^" | end] (append =parts =plain)
+		;]
+	]
 	;plain=: [(=plain: none) copy =plain some [not sigil=] (append =parts =plain)]
 	format=: [
 		(
@@ -109,9 +115,10 @@ short-format-ctx: context [
 
 	get-path-key: function [
 		"Return a value for a path/key, either in data or the global context"
-		data [block! object! map!]
+		data ;[block! object! map!]
 		key [path!]
 	][
+		if unstruct-data? data [return try [do key]]
 		; First, try to find the key in the data we were given.
 		; Failing that, try to get it from the global context.
 		; That may also fail. Now/time is a special failure case,
@@ -142,8 +149,8 @@ short-format-ctx: context [
 	][
 		either negative? value ["-"][			; always use "-" for negative
 			any [
-				all [flag? spec #"+"  #"+"]		; + forces + sign
-				all [flag? spec #"_"  #" "]		; _ reserves space for +/-
+				all [flag? spec #"+"  "+"]		; + forces + sign
+				all [flag? spec #"_"  " "]		; _ reserves space for +/-
 				""								; no sign flag = no space for sign on pos num
 			]
 		]
@@ -163,9 +170,16 @@ short-format-ctx: context [
 		value
 		return: [string!]
 	][
+		;print [mold spec mold value]
 		; Prep
+		fill-ch: either any [flag? spec #"0" flag? spec #"Z"] [#"0"][#" "]	;TBD 0 or Z?
+		align:   either flag? spec #"<" ['left]['right]
+		sign-ch: either number? value [sign-from-flags spec value][""]
 		if number? value [
 			if integer? prec: spec/prec [							; If we have a precision...
+				; Think about how best to force extra deci zeros. Can't just
+				; do this addition, because we then round it off.
+				;value: value + (10 ** negate (prec + 1))			; Add an extra digit to force 0s in frac
 				if percent? value [prec: add prec 2]				; Scale precision for percent! values
 				value: round/to value 10 ** negate prec				; Round the number so we can just mold it
 			]
@@ -173,17 +187,20 @@ short-format-ctx: context [
 		; Form
 		value: case [
 			spec/style [apply-format-style value spec/style]		; A named format style was used
-			not number? value [form any [:value ""]]				; Coerce none to ""; form to prevent arg modifcation
+			not number? :value [form any [:value ""]]				; Coerce none to ""; form to prevent arg modifcation
 			'else [
 				suffix: either all [integer? value  flag? spec #"º"] [ordinal-suffix value][""]
-				sign-ch: sign-from-flags spec value							; Sign is always left justified with this approach
-				rejoin [sign-ch mold absolute value suffix]			; Note: absolute; no sign here
+				;sign-ch: sign-from-flags spec value
+				;rejoin [sign-ch mold absolute value suffix]			; Note: absolute; no sign here
+				append mold absolute value suffix					; Note: absolute; no sign here
 			]
 		]
 		; Pad
-		fill-ch: either any [flag? spec #"0" flag? spec #"Z"] [#"0"][#" "]	;TBD 0 or Z?
-		align:   either flag? spec #"<" ['left]['right]
-		either none? spec/width [value][pad-aligned value align spec/width fill-ch]
+		either none? spec/width [value][pad-aligned value align (spec/width - length? sign-ch) fill-ch]
+		; Sign
+		insert value sign-ch										; Sign always goes at head
+		; Return
+		value
 	]
 
 	set 'looks-like-short-format? function [
@@ -223,7 +240,20 @@ short-format-ctx: context [
 					; access.
 					; If we get a scalar value, but more than one format placeholder,
 					; does it make sense to apply to value to every placeholder?
-					apply-short-format item either unstruct-data? data [data][
+					apply-short-format item either unstruct-data? data [
+						case [
+							none?    item/key [data]				; unkeyed field, use data
+							integer? item/key [none]				; can't pick from this kind of data
+							paren?   item/key [do-paren item/key]	; expression to evaluate
+							path?    item/key [get-path-key data item/key]	; deep key
+							'else [									; simple key name
+								attempt [do item/key]
+								;;?? Do we want to allow functions? I'm not so sure.
+								;val: select data item/key
+								;either any-function? :val [val][val]
+							]
+						]
+					][
 						; Something interesting to consider here is whether key lookups
 						; should always start at the head of the series, as it may have
 						; been advanced. This gets especially tricky, because you might
@@ -240,7 +270,6 @@ short-format-ctx: context [
 								either any-function? :val [val][val]
 							]
 						]
-						
 					]
 				]
 			]

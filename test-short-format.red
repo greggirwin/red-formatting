@@ -36,6 +36,7 @@ tests: context [
 		":+<>0_*.*" ; multi flags
 		"0:*.*"
 		"Color :s, number1 :d, number2 :05, float :5.2.\n"
+		":/"
 		":/5"
 		"/a"
 		"/1"
@@ -89,7 +90,7 @@ tests: context [
 		":<10"          123.456
 		":>10"          123.456
 		":10"           123.456
-		":/5"           123.456		; XXX dupes value in output
+		":/5"           123.456		; produces "123.456123.456" This is the single-value multi-placeholder question
 		":.5"           123.456
 		":07.1"         123.456
 		":010.1"        123.456		; This is confusing, with 0 as a flag
@@ -117,13 +118,27 @@ tests: context [
 		":10.4 :8.2 :5.0"    -123.456%
 		":8.2" -10.5
 		":Z8.2" -10.5
+		":<Z8.2" -10.5				; produces "-10.5000"	; this matches printf's approach
+		":<Z8.2" -12345678.5
 		":<8.2" -10.5
+
 		":º" 1
 		":º" 2
 		":º" 3
 		":º" 4
 		":º" 15
 		":º" 123
+
+		":/5"  123.456
+		":/pi" 123.456
+		":/a"  123.456
+		":/"   123.456
+		"::"   123.456
+		":/pi" 123.456
+		":/system/words/pi" 123.456
+		": /system/words/pi" 123.456
+		":/(1 + 1)" 123.456
+		": /(1 + 1) :" 123.456
 
 		"Color :<10, number1 :3, number2 :05, float :<5.2.\n" ["Red" 2 3 -45.6]
 
