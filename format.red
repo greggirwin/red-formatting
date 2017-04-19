@@ -121,14 +121,25 @@ formatting: context [
 		
 	;---------------------------------------------------------------------------
 
+	set 'ordinal-suffix func [	; English only right now.
+		"Return the ordinal suffix for a number (th, st, nd, rd, etc.)"
+		val [integer!]
+	][
+		;if negative? val [make error! "Ordinal-suffix doesn't support negative numbers"]
+		either all [val >= 10 val <= 20] ['th] [
+			switch/default remainder val 10 [1 ['st] 2 ['nd] 3 ['rd]] ['th]
+		]
+	]
+
 	set 'as-ordinal func [
 		"Return the ordinal string for a number (1st, 2nd, 3rd, etc.)"
 		val [integer!]
 	][
 		if negative? val [make error! "Ordinal doesn't support negative numbers"]
-		append form val either all [val >= 10 val <= 20] ['th] [
-			switch/default remainder val 10 [1 ['st] 2 ['nd] 3 ['rd]] ['th]
-		]
+		append form val ordinal-suffix val
+;		append form val either all [val >= 10 val <= 20] ['th] [
+;			switch/default remainder val 10 [1 ['st] 2 ['nd] 3 ['rd]] ['th]
+;		]
 	]
 
 	set 'form-num-with-group-seps function [
@@ -628,7 +639,7 @@ formatting: context [
 		]
 	]
 
-	; The printf model of total.deci lengths is unintuitive. It seems more
+	; The printf model of total.deci lengths is unintuitive to me. It seems more
 	; natural to use whole.deci. The question is how much "discussion" that
 	; will cause. 
 	set 'format-number-by-width function [
