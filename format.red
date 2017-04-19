@@ -5,32 +5,27 @@ Red [
 	Version: 0.0.1
 	Author:  "Gregg Irwin"
 	Notes: {
-			
-		When there are more arguments than positions in format, the format string is
-		applied again to the remaining arguments. When there are fewer arguments than
-		positions in the format string, printf fills the remaining positions with null-
-		strings (character fields) or zeros (numeric fields).
-			
-		 Currency Display number with thousand separator, if appropriate;
-		   display two digits to the right of the decimal separator.
-		   Output is based on system locale settings.
-		 Fixed Display at least one digit to the left and two digits to
-		   the right of the decimal separator.
-		 Standard Display number with thousand separator, at least one
-		   digit to the left and two digits to the right of the decimal
-		   separator.
-		 Scientific Use standard scientific notation.
-		
+		(DONE) means done enough for initial review and RFC
+		- masked format (DONE)
+		- short-format/printf (DONE)
+		- Format by width (DONE)
+		- form-num-with-group-seps (DONE)
+		- format-number-with-style (DONE)
+		- format bytes (DONE)
+		- format logic (DONE)
+		- mold-logic (DONE)
+		- Composite (DONE)
+		- as-ordinal (DONE)
 	}
 	TBD: {
+		- Multi-form auto format selection (semicolon format)
 		- Decide on real func names. Very verbose and intentionally bad sometimes, right now.
-		- short-format/printf (parser for actual spec largely done)
 		- SCI E notation for scientific formatting in masks
 		- ENG Engineering notation
 		- 1.#INF and 1.#NaN support
 		- Format style system
-		- Decide if plain spaces are allowed as group separators
-		- Decide if we need to allow ";" in multi-part format strings, e.g. in quotes or escaped
+		- Masked: Decide if plain spaces are allowed as group separators
+		- Multi-form: Decide if we need to allow ";" in multi-part format strings, e.g. in quotes or escaped
 		
 		- Far future: optimize. Terribly slow right now, what with all the special
 		  case checks, and no concern for speed. R/S will be the way to go, but 
@@ -145,7 +140,11 @@ formatting: context [
 		num: form num							; Form strings, too, so they're not modified
 		sep: any [sep #","]
 		ct: negate abs any [ct 3]
-		num: skip any [find num deci-char num  tail num] ct
+		num: skip any [
+			find num deci-char num				; start at the decimal point, if there is one
+			find/last/tail num digit			; or at the last digit (support, e.g., "123rd")
+			tail num							; or at the end of the string
+		] ct
 		while [not head? num] [
 			; We want to catch cases where the preceding char is not a digit, 
 			; and *not* insert a sep if that's the case.
@@ -561,14 +560,12 @@ formatting: context [
 		num [number!] "Rounded to integer before formatting"
 		return: [string!]
 	][
-		;enbase/base debase/base to-hex to integer! round num 16 2
 		enbase/base num-to-hex-bin num 2
 	]
 	num-to-hex-bin: func [
 		num [number!] "Rounded to integer before conversion"
 		return: [binary!]
 	][
-		;debase/base form to-hex to integer! round num 16 
 		to binary! to integer! round num
 	]
 	
@@ -587,8 +584,9 @@ formatting: context [
 			;r-currency [add-seps/with to money! n r-sep]                ; $#'##0.00
 			;r-money    [add-seps/with to money! n r-sep]                ; $#'##0.00
 			r-money
-			r-currency [add-seps/with format-number-with-mask round/to n .01 "$#,##0.00" r-sep]                ; $#'##0.00  -$#'##0.00
-			r-percent  [add-seps/with format-number-by-width to percent! n 1 2 r-sep]
+			r-currency [add-seps/with format-number-with-mask round/to n .01 "$#,##0.00" r-sep] ; $#'##0.00  -$#'##0.00
+			r-percent  [add-seps/with format-number-by-width to percent! n 1 2 r-sep]			; format-number-by-width auto handles percent
+			r-ordinal  [add-seps/with as-ordinal to integer! n r-sep]
 			r-hex      [to-hex to integer! n]
 
 			general
@@ -601,6 +599,7 @@ formatting: context [
 			percent  [add-seps format-number-by-width to percent! n 1 2]
 			;percent  [join add-seps next form to money! value * 100 #"%"]
 			;E scientific []	;Use standard scientific notation.
+			ordinal  [add-seps as-ordinal to integer! n]
 
 			base-64  [enbase/base form n 64]
 			hex      [form to-hex to integer! n]
