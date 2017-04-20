@@ -1,6 +1,7 @@
 ﻿Red []
 
 do %format.red
+do %short-format.red
 
 ;-------------------------------------------------------------------------------
 
@@ -255,6 +256,7 @@ with formatting [
 			format-number-by-width 10.5% 0 0
 			format-number-by-width -10.5% 0 0
 			format-number-by-width/with -10.5% 8 2 #"0"
+			format-number-by-width/with -10.56% 8 2 #"0"
 
 			format-number-by-width/with -10.5 8 2 #"0"
 			format-number-by-width/with/use+ 10.5 8 2 #"0"
@@ -428,5 +430,204 @@ with formatting [
 	format-number-with-mask-tests/run
 	
 ]
+
+block-form-tests: context [
+	parse-test: function [
+		input [block!] 
+	][
+		print "parse-as-block-format"
+		print [tab "INPUT: ^/^-^-" mold input]
+		res: parse-as-block-format input
+		print [tab "OUTPUT:"]
+		if res [
+			either object? res [print [tab tab trim/lines mold res]][
+				foreach item res [print [tab tab trim/lines mold item]]
+			]
+		]
+	]
+	parse-specs: [
+		[('test)]
+		[(20 10)]
+		[tab (20 10) newline]
+		[(:+)]
+		[(:<)]
+		[(:> 5)]
+		[(:>)]
+		[(5)]
+		[(0 5)]
+		[(:+0<_Zz¤º)] ; multi flags  $ isn't allowed. Lexing issue.
+		[(/5)]
+		[(/a)]
+		[(/num 20 10)]
+		[(/abc #xyz)]
+		[(/abc :xyz)]
+		[(a/b/c)]
+		[((code here) 'xyz)]
+
+		[(:º)]
+		[(:¤)]
+
+		[(:< fixed)]
+		[('money)]
+		[(/num :+<>Z_ 5 2 'general)]
+		[(/abc ordinal) "xyz"]
+		[(/abc 5 2 hex) (:< 5 2)]
+		[(/abc 'hex) ":xyz"]
+		[('a/b/c 'binary /key-x)]
+		[((code here) 'base-64) ]
+
+		[Color: (:< 10)  number1 (3)  http:// (:Z 5)  float: (:< 5 2)]
+	]
+	run-parse-tests: does [
+		print ""
+		foreach spec parse-specs [parse-test dbg: spec]
+	]
+	;------------------------------------------------------
+	apply-test: function [
+		input [block!] "Spec as string to be parsed"
+		value
+	][
+		print "apply-test"
+		print [tab "INPUT: " mold input]
+		print [tab "VALUE: " trim/lines mold value]
+		res: block-form input value
+		print [tab "OUTPUT:" mold res]
+	]
+	apply-specs: compose/only [
+		""				123.456
+		":"             123.456
+		"^^:^^:"        123.456
+		"^^:"           123.456
+		"test"          123.456
+		":*.*d"         123.456
+		":20.10d"       123.456
+		"\t:*.*\n"      123.456
+		"\t:20.10d\n"   123.456
+		":+*.*"         123.456
+		":<*.*"         123.456
+		":>*.2"         123.456
+		":<10"          123.456
+		":>10"          123.456
+		":10"           123.456
+		":/5"           123.456		; produces "123.456123.456" This is the single-value multi-placeholder question
+		":.5"           123.456
+		":07.1"         123.456
+		":010.1"        123.456		; This is confusing, with 0 as a flag
+		":00.1"         123.456		; This is confusing, with 0 as a flag
+		":0007.1"       123.456		; This is confusing, with 0 as a flag
+		":015.4"        123.456789	; This is confusing, with 0 as a flag
+		":Z10.1"        123.456
+		":Z0.1"         123.456
+		":Z007.1"       123.456
+		":Z15.4"        123.456789
+		":_*.*"         123.456
+		":+<>0_*.*"     123.456
+		"0:*.*"         123.456
+		
+		":10"           123.456%
+		":<10"          123.456%
+		":+10"          123.456%
+		":5.1"          123.456%
+		":5.2"          123.456%
+		":10.3"         123.456%
+		":10.4"        -123.456%
+		
+		":2.2"          1.2
+
+		":10.4 :8.2 :5.0"    -123.456%
+		":8.2" -10.5
+		":Z8.2" -10.5
+		":<Z8.2" -10.5				; produces "-10.5000"	; this matches printf's approach
+		":<Z8.2" -12345678.5
+		":<8.2" -10.5
+
+		":º" 1
+		":º" 2
+		":º" 3
+		":º" 4
+		":º" 15
+		":º" 123
+
+		":/5"  123.456
+		":/pi" 123.456
+		":/a"  123.456
+		":/"   123.456
+		"::"   123.456
+		":/pi" 123.456
+		":/system/words/pi" 123.456
+		": /system/words/pi" 123.456
+		":/(1 + 1)" 123.456
+		": /(1 + 1) :" 123.456
+
+		"Color :<10, number1 :3, number2 :05, float :<5.2.\n" ["Red" 2 3 -45.6]
+
+		; colon-slash escapes
+		"Color: :<10, number1/ :3, http://:2, float: :<5.2" ["Red" 3 8080 -45.6]
+
+		; "Color _<10, number1 _3, number2 _05, float _<5.2.\n" ["Red" 2 3 -45.6]
+		; "Color =<10, number1 =3, number2 =05, float =<5.2.\n" ["Red" 2 3 -45.6]
+		; "Color &<10, number1 &3, number2 &05, float &<5.2.\n" ["Red" 2 3 -45.6]
+		; "Color @<10, number1 @3, number2 @05, float @<5.2.\n" ["Red" 2 3 -45.6]
+		; "Color !<10, number1 !3, number2 !05, float !<5.2.\n" ["Red" 2 3 -45.6]
+
+		"Color :'col-1| idx3 /3:'acct| num2 /N2:<'general| pi /system/words/pi:<'fixed| /(1 + 1) /now/time" [
+			"Red" n2 2 3 n4 -45.6
+		]
+		
+		"Color :<5| idx3 /3:Z3| num2 /N2:<5| pi /system/words/pi:<5.2| /(1 + 1) /now/time" [
+			"Red" n2 2 3 n4 -45.6
+		]
+		;"Color Red  | idx3 003| num2 2    | pi 3.14 | 2"
+		"Color :<5| idx3 /3:Z3| num2 /N2:<5| pi /system/words/pi:<5.2| /(1 + 1):z3 |/now/time/precise:10|/fn" (compose [
+			"Red" n2 2 3 n4 -45.6 fn (does [42])
+		])
+
+		; named fields in an block
+		"First^^: /first:<8| Last^^: /last:8| phone^^: /phoneX" [
+			first: "Gregg" last: "Irwin" phone: #208.461.9999
+		]
+
+		; named paths in an block
+		"First^^: /name/first:<8| Last^^: /name/last:8| phone^^: /name/phoneX" [
+			name: [first: "Gregg" last: "Irwin" phone: #208.461.9999]
+		]
+
+		; named fields in an object
+		"First^^: /first:<8| Last^^: /last:8| phone^^: /phoneX" (context [
+			first: "Gregg" last: "Irwin" phone: #208.461.9999
+		])
+
+		; named paths in an object
+		"First^^: /name/first:<8| Last^^: /name/last:8| phone^^: /name/phoneX" (context [
+			name: context [first: "Gregg" last: "Irwin" phone: #208.461.9999]
+		])
+
+		; named fields in a map
+		"First^^: /first:<8| Last^^: /last:8| phone^^: /phoneX" #(
+			first: "gregg" last: "irwin" phone: #208.461.0000
+		)
+
+		; named paths in a map. Nicer escapes
+		"First: /name/first:<8| Last: /name/last:8| phone: /name/phoneX" #(
+			name: #(first: "gregg" last: "irwin" phone: #208.461.0000)
+		)
+
+	]
+	run-apply-tests: does [
+		print ""
+		foreach [spec val] apply-specs [apply-test dbg: spec val]
+	]
+	
+]
+block-form-test-apply: func [str val][
+	apply-short-format parse-as-block-format str val
+]
+
+
+block-form-tests/run-parse-tests
+print '--------------------------------------
+block-form-tests/run-apply-tests
+print '--------------------------------------
+block-form-test-apply ":5" 123.456
 
 halt

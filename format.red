@@ -18,6 +18,9 @@ Red [
 		- as-ordinal (DONE)
 	}
 	TBD: {
+		- Determine exact format-by-width/short-form+prec behavior! It seems like the
+		  precision should fix the deci width *exactly*, rather than letting it float.
+		  Printf changes the output based on alignment.
 		- Multi-form auto format selection (semicolon format)
 		- Decide on real func names. Very verbose and intentionally bad sometimes, right now.
 		- SCI E notation for scientific formatting in masks
@@ -166,6 +169,11 @@ formatting: context [
 		]
 		num
 	]
+
+	set 'INF?  func [val][val = 1.#INF]
+	set '-INF? func [val][val = -1.#INF]
+	;set 'NaN?  func [val][val = 1.#NaN]    ; Doesn't work currently
+	set 'NaN?  func [val]["1.#NaN" = form val]
 
 	pad-aligned: func [
 		"Wrapper for `pad` to ease refinement propagation"
@@ -697,6 +705,164 @@ format-number: function [
 
 
 ;-------------------------------------------------------------------------------
+; This is the block equivalent to the short-form string interpolation formatter.
+; TBD: It would be really nice if they could share a common infrastructure.
+do %short-format.red
+
+block-format-ctx: context [
+
+	;---------------------------------------------------------------------------
+	;-- Block-Form Field Parser
+	
+	; TBD:
+	; A|a flags for upper/lower case
+	; Aa for mixed case (but it's not a single char flag)
+	; Named formats
+	format-proto: context [
+		key:	; No key means take the next value; /n means pick by index if int or key if not int; 
+		flags:	; 0 or more of "<>_+0Zº$¤"
+		width:	; Minimum TOTAL field width
+		prec:   ; Maximum number of decimal places (may be less, not zero padded on right)
+		style:	; Named format
+			none
+	]
+
+	=key:
+	=flags:
+	=width:
+	=prec:
+	=style:
+	=plain:
+	=parts:
+		none
+			
+	digit=:     charset "0123456789"
+	flag-char=: charset "_+0<>Zzº$¤"			; º=186=ordinal  ¤=164=currency
+
+	flags=: [
+		set =flags get-word! (
+			=flags: form =flags
+			if not parse =flags [some flag-char=][
+				make error! rejoin ["Unknown flag characters found: " =flags]
+			]
+		)
+	]
+	width=: [set =width integer!]
+	prec=:  [set =prec integer!]
+	style=: [set =style [word! | lit-word!]]
+	key=: [
+		set =key [refinement! | path! | paren!] (
+			if refinement? =key [=key: load form =key]	;=key: to either parse form =key [some digit=] [integer!][word!]
+		)
+	]
+	
+	; `[/key][:flags][width][.precision]]['style]`
+	; `:[flags][width][.precision]['style]`
+	; `:[flags]['style]`
+	; there may be (in this order) zero or more flags, an optional minimum 
+	; field width, an optional precision and an optional length modifier.
+	fmt=: [opt flags= opt width= opt prec= opt style=]
+	
+	field=: [
+		(=flags: =width: =prec: =key: =style: none)
+		[key= opt fmt= | fmt=] (
+			if find =flags #"º" [=style: quote 'ordinal]
+			if find =flags charset "$¤" [=style: quote 'money]
+			append/only =parts make format-proto compose [
+				key: :=key flags: (=flags) width: (=width) prec: (=prec) style: =style
+			]
+		)
+	]
+	;plain=: [(=plain: none) set =plain not paren! (append =parts =plain)]
+	plain=: [(=plain: none) copy =plain to [paren! | end] (append =parts =plain)]
+	format=: [
+		(
+			=parts: copy []
+			=plain: none
+		)
+		any [
+			end break
+			| set =plain any-string! (append =parts =plain)
+			| into field=
+			| plain=
+		]
+	]
+	
+	;---------------------------------------------------------------------------
+
+	with: func [
+		object [object! none!]
+		body   [block!]
+	][
+		if object [do bind/copy body object]
+	]
+
+	set 'parse-as-block-format func [
+		"Parse input, returning block of literal string and field spec blocks"
+		input [block!]
+	][
+		if parse input format= [
+			; If there was only a format in the input, return just
+			; that spec directly.
+			;!! Can't use WITH on this right now. Parse conflict in rules.
+			either short-format-ctx/one-spec? =parts [=parts/1][=parts]
+		]
+	]
+
+	with short-format-ctx [			; leverage internals now, work on commonality
+
+		set 'block-form function [
+			"Format and substitute values into a template string"
+			input [block!] "Template block containing `(/value:format)` fields and literal data"
+			data "Value(s) to apply to template fields"
+		][
+			result: clear ""
+			if none? spec: parse-as-block-format input [return none]	; Bail if the format string wasn't valid
+			if object? spec [return apply-short-format spec data]		; We got a single format spec
+			collect/into [
+				foreach item spec [
+					keep either string? item [item][					; literal data from template string
+						; If we allow objects and maps to be used, so you can select by
+						; key, they won't work for format-only fields or numeric index
+						; access.
+						; If we get a scalar value, but more than one format placeholder,
+						; does it make sense to apply to value to every placeholder?
+						apply-short-format item either unstruct-data? data [
+							case [
+								none?    item/key [data]				; unkeyed field, use data
+								integer? item/key [none]				; can't pick from this kind of data
+								paren?   item/key [do-paren item/key]	; expression to evaluate
+								path?    item/key [get-path-key data item/key]	; deep key
+								'else             [attempt [do item/key]]		; simple key name
+							]
+						][
+							; Something interesting to consider here is whether key lookups
+							; should always start at the head of the series, as it may have
+							; been advanced. This gets especially tricky, because you might
+							; have advanced an odd/unknown number of values. We might also
+							; then want a way to skip to a new index in the values.
+							case [
+								none?    item/key [first+ data]			; unkeyed field, take sequentially from data
+								integer? item/key [pick data item/key]	; index key
+								paren?   item/key [do-paren item/key]	; expression to evaluate
+								path?    item/key [get-path-key data item/key]	; deep key
+								'else [									; simple key name
+									;?? Do we want to allow functions? I'm not so sure.
+									val: select data item/key
+									either any-function? :val [val][val]
+								]
+							]
+						]
+					]
+				]
+			] result
+		]
+	]
+	
+]
+
+;-------------------------------------------------------------------------------
+
 
 set 'format-value func [
 	value [number! none! time! logic! any-string!] ; money! date! 
