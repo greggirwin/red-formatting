@@ -20,6 +20,8 @@ foreach val [
 	":('--):b"
 	"ax:(1 / 0):xb"
 
+	"alpha: :(rejoin ['a 'b]): answer: :(42 / 3):"
+
 	"a :('--): b"
 	"a :('--):"
 	":('--): b"
