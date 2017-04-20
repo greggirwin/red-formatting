@@ -120,7 +120,12 @@ short-format-ctx: context [
 		data ;[block! object! map!]
 		key [path!]
 	][
-		if unstruct-data? data [return try [do key]]
+		;!! DO key here produces strange results. Sometimes false, sometimes ["-"]
+		;!! for system/words/pi, even though they look the same and the binding
+		;!! appears to be the same.
+		;print ['*** mold data  key  do key  key = 'system/words/pi  same? context? last key system/words]
+		;if unstruct-data? data [return try [get key]]
+		
 		; First, try to find the key in the data we were given.
 		; Failing that, try to get it from the global context.
 		; That may also fail. Now/time is a special failure case,
@@ -187,7 +192,7 @@ short-format-ctx: context [
 			]
 		]
 		; Form
-		value: case [
+		value: case [												; Reassign 'value to string result for later padding
 			spec/style [apply-format-style value spec/style]		; A named format style was used
 			not number? :value [form any [:value ""]]				; Coerce none to ""; form to prevent arg modifcation
 			'else [
@@ -223,7 +228,43 @@ short-format-ctx: context [
 			either one-spec? =parts [=parts/1][=parts]
 		]
 	]
-
+	
+	; Temp helper to dispatch by spec/key type and data.
+	; Exported for testing from %format.red 
+	set 'apply-format-by-key+data func [spec [object!] data][
+		; If we allow objects and maps to be used, so you can select by
+		; key, they won't work for format-only fields or numeric index
+		; access.
+		; If we get a scalar value, but more than one format placeholder,
+		; does it make sense to apply to value to every placeholder?
+		apply-short-format spec either unstruct-data? data [
+			case [
+				none?    spec/key [data]				; unkeyed field, use data
+				integer? spec/key [none]				; can't pick from this kind of data
+				paren?   spec/key [do-paren spec/key]	; expression to evaluate
+				path?    spec/key [get-path-key data spec/key]	; deep key
+				'else             [attempt [do spec/key]]		; simple key name
+			]
+		][
+			; Something interesting to consider here is whether key lookups
+			; should always start at the head of the series, as it may have
+			; been advanced. This gets especially tricky, because you might
+			; have advanced an odd/unknown number of values. We might also
+			; then want a way to skip to a new index in the values.
+			case [
+				none?    spec/key [first+ data]			; unkeyed field, take sequentially from data
+				integer? spec/key [pick data spec/key]	; index key
+				paren?   spec/key [do-paren spec/key]	; expression to evaluate
+				path?    spec/key [get-path-key data spec/key]	; deep key
+				'else [									; simple key name
+					;?? Do we want to allow functions? I'm not so sure.
+					val: select data spec/key
+					either any-function? :val [val][val]
+				]
+			]
+		]
+	]
+	
 	set 'short-form function [
 		"Format and substitute values into a template string"
 		string [string!] "Template string containing `/value:format` fields and literal data"
@@ -231,41 +272,11 @@ short-format-ctx: context [
 	][
 		result: clear ""
 		if none? spec: parse-as-short-format string [return none]	; Bail if the format string wasn't valid
-		if object? spec [return apply-short-format spec data]		; We got a single format spec
+		if object? spec [return apply-format-by-key+data spec data]	; We got a single format spec
 		collect/into [
 			foreach item spec [
-				keep either string? item [item][					; literal data from template string
-					; If we allow objects and maps to be used, so you can select by
-					; key, they won't work for format-only fields or numeric index
-					; access.
-					; If we get a scalar value, but more than one format placeholder,
-					; does it make sense to apply to value to every placeholder?
-					apply-short-format item either unstruct-data? data [
-						case [
-							none?    item/key [data]				; unkeyed field, use data
-							integer? item/key [none]				; can't pick from this kind of data
-							paren?   item/key [do-paren item/key]	; expression to evaluate
-							path?    item/key [get-path-key data item/key]	; deep key
-							'else             [attempt [do item/key]]		; simple key name
-						]
-					][
-						; Something interesting to consider here is whether key lookups
-						; should always start at the head of the series, as it may have
-						; been advanced. This gets especially tricky, because you might
-						; have advanced an odd/unknown number of values. We might also
-						; then want a way to skip to a new index in the values.
-						case [
-							none?    item/key [first+ data]			; unkeyed field, take sequentially from data
-							integer? item/key [pick data item/key]	; index key
-							paren?   item/key [do-paren item/key]	; expression to evaluate
-							path?    item/key [get-path-key data item/key]	; deep key
-							'else [									; simple key name
-								;?? Do we want to allow functions? I'm not so sure.
-								val: select data item/key
-								either any-function? :val [val][val]
-							]
-						]
-					]
+				keep either not object? item [item][				; literal data from template string
+					apply-format-by-key+data item data
 				]
 			]
 		] result

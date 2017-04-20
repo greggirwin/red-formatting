@@ -476,6 +476,8 @@ block-form-tests: context [
 		[('a/b/c 'binary /key-x)]
 		[((code here) 'base-64) ]
 
+		[(system/words/pi)]
+
 		[Color: (:< 10)  number1 (3)  http:// (:Z 5)  float: (:< 5 2)]
 	]
 	run-parse-tests: does [
@@ -494,123 +496,106 @@ block-form-tests: context [
 		print [tab "OUTPUT:" mold res]
 	]
 	apply-specs: compose/only [
-		""				123.456
-		":"             123.456
-		"^^:^^:"        123.456
-		"^^:"           123.456
-		"test"          123.456
-		":*.*d"         123.456
-		":20.10d"       123.456
-		"\t:*.*\n"      123.456
-		"\t:20.10d\n"   123.456
-		":+*.*"         123.456
-		":<*.*"         123.456
-		":>*.2"         123.456
-		":<10"          123.456
-		":>10"          123.456
-		":10"           123.456
-		":/5"           123.456		; produces "123.456123.456" This is the single-value multi-placeholder question
-		":.5"           123.456
-		":07.1"         123.456
-		":010.1"        123.456		; This is confusing, with 0 as a flag
-		":00.1"         123.456		; This is confusing, with 0 as a flag
-		":0007.1"       123.456		; This is confusing, with 0 as a flag
-		":015.4"        123.456789	; This is confusing, with 0 as a flag
-		":Z10.1"        123.456
-		":Z0.1"         123.456
-		":Z007.1"       123.456
-		":Z15.4"        123.456789
-		":_*.*"         123.456
-		":+<>0_*.*"     123.456
-		"0:*.*"         123.456
-		
-		":10"           123.456%
-		":<10"          123.456%
-		":+10"          123.456%
-		":5.1"          123.456%
-		":5.2"          123.456%
-		":10.3"         123.456%
-		":10.4"        -123.456%
-		
-		":2.2"          1.2
+		[()]			123.456
+		[('test)]          123.456
+		[( 20 10)]       123.456
+		['tab (20 10) 'newline]   123.456
+		[(:+)]         123.456
+		[(:<)]         123.456
+		[(:> 0 2)]         123.456
+		[(:< 10)]          123.456
+		[(10)]           123.456
+		[(/5)]           123.456		; produces "123.456123.456" This is the single-value multi-placeholder question
+		[(0 5)]           123.456
+		[(:Z 7 1)]         123.456
+		[(:Z 10 1)]        123.456
+		[(:Z 0 1)]         123.456
+		[(:Z 007 1)]       123.456
+		[(:Z 15 4)]        123.456789
+		[(:Z 15 4)]        -123.456789
+		[(:_)]         123.456
+		[(:+<0_)]     123.456
 
-		":10.4 :8.2 :5.0"    -123.456%
-		":8.2" -10.5
-		":Z8.2" -10.5
-		":<Z8.2" -10.5				; produces "-10.5000"	; this matches printf's approach
-		":<Z8.2" -12345678.5
-		":<8.2" -10.5
+		[(10)]           123.456%
+		[(:< 10)]          123.456%
+		[(:+ 10)]          123.456%
+		[(5 1)]          123.456%
+		[(5 2)]          123.456%
+		[(10 3)]         123.456%
+		[(10 4)]        -123.456%
 
-		":º" 1
-		":º" 2
-		":º" 3
-		":º" 4
-		":º" 15
-		":º" 123
+		[(2 2)]          1.2
 
-		":/5"  123.456
-		":/pi" 123.456
-		":/a"  123.456
-		":/"   123.456
-		"::"   123.456
-		":/pi" 123.456
-		":/system/words/pi" 123.456
-		": /system/words/pi" 123.456
-		":/(1 + 1)" 123.456
-		": /(1 + 1) :" 123.456
+		[(10 4) " | " (8 2) " | " (5 0)]    -123.456%
+		[(8 2)] -10.5
+		[(:Z 8 2)] -10.5
+		[(:<Z 8 2)] -10.5				; produces "-10.5000"	; this matches printf's approach
+		[(:<Z 8 2)] -12345678.5
+		[(:< 8 2)] -10.5
 
-		"Color :<10, number1 :3, number2 :05, float :<5.2.\n" ["Red" 2 3 -45.6]
+		[(:º)] 1  
+		[(:º)] 2  
+		[(:º)] 3  
+		[(:º)] 4  
+		[(:º)] 15 
+		[(:º)] 123
 
-		; colon-slash escapes
-		"Color: :<10, number1/ :3, http://:2, float: :<5.2" ["Red" 3 8080 -45.6]
+		[(/5)]  123.456
+		[(/pi)] 123.456
+		[(/a)]  123.456
+		[(system/words/pi)] 123.456
+		[((1 + 1))] 123.456
 
-		; "Color _<10, number1 _3, number2 _05, float _<5.2.\n" ["Red" 2 3 -45.6]
-		; "Color =<10, number1 =3, number2 =05, float =<5.2.\n" ["Red" 2 3 -45.6]
-		; "Color &<10, number1 &3, number2 &05, float &<5.2.\n" ["Red" 2 3 -45.6]
-		; "Color @<10, number1 @3, number2 @05, float @<5.2.\n" ["Red" 2 3 -45.6]
-		; "Color !<10, number1 !3, number2 !05, float !<5.2.\n" ["Red" 2 3 -45.6]
-
-		"Color :'col-1| idx3 /3:'acct| num2 /N2:<'general| pi /system/words/pi:<'fixed| /(1 + 1) /now/time" [
-			"Red" n2 2 3 n4 -45.6
-		]
-		
-		"Color :<5| idx3 /3:Z3| num2 /N2:<5| pi /system/words/pi:<5.2| /(1 + 1) /now/time" [
-			"Red" n2 2 3 n4 -45.6
-		]
-		;"Color Red  | idx3 003| num2 2    | pi 3.14 | 2"
-		"Color :<5| idx3 /3:Z3| num2 /N2:<5| pi /system/words/pi:<5.2| /(1 + 1):z3 |/now/time/precise:10|/fn" (compose [
-			"Red" n2 2 3 n4 -45.6 fn (does [42])
-		])
-
-		; named fields in an block
-		"First^^: /first:<8| Last^^: /last:8| phone^^: /phoneX" [
-			first: "Gregg" last: "Irwin" phone: #208.461.9999
-		]
-
-		; named paths in an block
-		"First^^: /name/first:<8| Last^^: /name/last:8| phone^^: /name/phoneX" [
-			name: [first: "Gregg" last: "Irwin" phone: #208.461.9999]
-		]
-
-		; named fields in an object
-		"First^^: /first:<8| Last^^: /last:8| phone^^: /phoneX" (context [
-			first: "Gregg" last: "Irwin" phone: #208.461.9999
-		])
-
-		; named paths in an object
-		"First^^: /name/first:<8| Last^^: /name/last:8| phone^^: /name/phoneX" (context [
-			name: context [first: "Gregg" last: "Irwin" phone: #208.461.9999]
-		])
-
-		; named fields in a map
-		"First^^: /first:<8| Last^^: /last:8| phone^^: /phoneX" #(
-			first: "gregg" last: "irwin" phone: #208.461.0000
-		)
-
-		; named paths in a map. Nicer escapes
-		"First: /name/first:<8| Last: /name/last:8| phone: /name/phoneX" #(
-			name: #(first: "gregg" last: "irwin" phone: #208.461.0000)
-		)
+		[Color: (:< 10) number1 (/3) number2 () xxx] ["Red" 2 3 -45.6]		; :z /N hangs
+		[Color: (:< 10) number1 (/3) number2 (:z "xxx") xxx] ["Red" 2 3 -45.6]		; :z /N hangs
+		[Color: (:< 10) number1 (/3) number2 (:z /5) xxx] ["Red" 2 3 -45.6]		; :z /N hangs
+		[Color: (:< 10) number1 (/3) number2 (/5 :z)] ["Red" 2 3 -45.6]
+		;[Color (:< 10) number1 (/3) number2 (/5 :z)  float (:< 5 2) . newline] ["Red" 2 3 -45.6]
+;
+;		; colon-slash escapes
+;		"Color: :<10, number1/ :3, http://:2, float: :<5.2" ["Red" 3 8080 -45.6]
+;
+;		"Color :'col-1| idx3 /3:'acct| num2 /N2:<'general| pi /system/words/pi:<'fixed| /(1 + 1) /now/time" [
+;			"Red" n2 2 3 n4 -45.6
+;		]
+;		
+;		"Color :<5| idx3 /3:Z3| num2 /N2:<5| pi /system/words/pi:<5.2| /(1 + 1) /now/time" [
+;			"Red" n2 2 3 n4 -45.6
+;		]
+;		;"Color Red  | idx3 003| num2 2    | pi 3.14 | 2"
+;		"Color :<5| idx3 /3:Z3| num2 /N2:<5| pi /system/words/pi:<5.2| /(1 + 1):z3 |/now/time/precise:10|/fn" (compose [
+;			"Red" n2 2 3 n4 -45.6 fn (does [42])
+;		])
+;
+;		; named fields in an block
+;		"First^^: /first:<8| Last^^: /last:8| phone^^: /phoneX" [
+;			first: "Gregg" last: "Irwin" phone: #208.461.9999
+;		]
+;
+;		; named paths in an block
+;		"First^^: /name/first:<8| Last^^: /name/last:8| phone^^: /name/phoneX" [
+;			name: [first: "Gregg" last: "Irwin" phone: #208.461.9999]
+;		]
+;
+;		; named fields in an object
+;		"First^^: /first:<8| Last^^: /last:8| phone^^: /phoneX" (context [
+;			first: "Gregg" last: "Irwin" phone: #208.461.9999
+;		])
+;
+;		; named paths in an object
+;		"First^^: /name/first:<8| Last^^: /name/last:8| phone^^: /name/phoneX" (context [
+;			name: context [first: "Gregg" last: "Irwin" phone: #208.461.9999]
+;		])
+;
+;		; named fields in a map
+;		"First^^: /first:<8| Last^^: /last:8| phone^^: /phoneX" #(
+;			first: "gregg" last: "irwin" phone: #208.461.0000
+;		)
+;
+;		; named paths in a map. Nicer escapes
+;		"First: /name/first:<8| Last: /name/last:8| phone: /name/phoneX" #(
+;			name: #(first: "gregg" last: "irwin" phone: #208.461.0000)
+;		)
 
 	]
 	run-apply-tests: does [
@@ -628,6 +613,6 @@ block-form-tests/run-parse-tests
 print '--------------------------------------
 block-form-tests/run-apply-tests
 print '--------------------------------------
-block-form-test-apply ":5" 123.456
+block-form-test-apply [(5)] 123.456
 
 halt

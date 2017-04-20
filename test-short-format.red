@@ -59,6 +59,10 @@ tests: context [
 		"/abc:'hex:xyz"
 		"/a/b/c:'binary/key-x"
 		"/(code here):'base-64 "
+
+		"/(1 + 1)"
+		":/(1 + 1)"
+		": /(1 + 1) :"
 		
 		"Color: :<10, number1/ :3, http://:05, float: :<5.2"
 	]
@@ -138,8 +142,14 @@ tests: context [
 		":/"   123.456
 		"::"   123.456
 		":/pi" 123.456
+		"/system/words/pi" 123.456
 		":/system/words/pi" 123.456
 		": /system/words/pi" 123.456
+		"/system/words/dot" 123.456
+		":/system/words/dot" 123.456
+		": /system/words/dot" 123.456
+		"/now/time" 123.456
+		"/(1 + 1)" 123.456
 		":/(1 + 1)" 123.456
 		": /(1 + 1) :" 123.456
 
@@ -191,8 +201,8 @@ tests: context [
 			first: "gregg" last: "irwin" phone: #208.461.0000
 		)
 
-		; named paths in a map
-		"First^^: /name/first:<8| Last^^: /name/last:8| phone^^: /name/phoneX" #(
+		; named paths in a map. Nicer escapes
+		"First: /name/first:<8| Last: /name/last:8| phone: /name/phoneX" #(
 			name: #(first: "gregg" last: "irwin" phone: #208.461.0000)
 		)
 
