@@ -109,7 +109,7 @@ formatting: context [
 	; work for those. The question, then, is what value there is in a
 	; uniform interface for copy+extend.
 	join: func [
-		"Concatenate values"
+		"Concatenate/merge values"
 		a "Coerced to string if not a series, map, or object"
 		b "Single value or block of values; reduced if a is not an object or map"
 	][

@@ -550,52 +550,53 @@ block-form-tests: context [
 		[Color: (:< 10) number1 (/3) number2 (:z "xxx") xxx] ["Red" 2 3 -45.6]		; :z /N hangs
 		[Color: (:< 10) number1 (/3) number2 (:z /5) xxx] ["Red" 2 3 -45.6]		; :z /N hangs
 		[Color: (:< 10) number1 (/3) number2 (/5 :z)] ["Red" 2 3 -45.6]
-		;[Color (:< 10) number1 (/3) number2 (/5 :z)  float (:< 5 2) . newline] ["Red" 2 3 -45.6]
-;
-;		; colon-slash escapes
-;		"Color: :<10, number1/ :3, http://:2, float: :<5.2" ["Red" 3 8080 -45.6]
-;
-;		"Color :'col-1| idx3 /3:'acct| num2 /N2:<'general| pi /system/words/pi:<'fixed| /(1 + 1) /now/time" [
-;			"Red" n2 2 3 n4 -45.6
-;		]
-;		
-;		"Color :<5| idx3 /3:Z3| num2 /N2:<5| pi /system/words/pi:<5.2| /(1 + 1) /now/time" [
-;			"Red" n2 2 3 n4 -45.6
-;		]
-;		;"Color Red  | idx3 003| num2 2    | pi 3.14 | 2"
-;		"Color :<5| idx3 /3:Z3| num2 /N2:<5| pi /system/words/pi:<5.2| /(1 + 1):z3 |/now/time/precise:10|/fn" (compose [
-;			"Red" n2 2 3 n4 -45.6 fn (does [42])
-;		])
-;
-;		; named fields in an block
-;		"First^^: /first:<8| Last^^: /last:8| phone^^: /phoneX" [
-;			first: "Gregg" last: "Irwin" phone: #208.461.9999
-;		]
-;
-;		; named paths in an block
-;		"First^^: /name/first:<8| Last^^: /name/last:8| phone^^: /name/phoneX" [
-;			name: [first: "Gregg" last: "Irwin" phone: #208.461.9999]
-;		]
-;
-;		; named fields in an object
-;		"First^^: /first:<8| Last^^: /last:8| phone^^: /phoneX" (context [
-;			first: "Gregg" last: "Irwin" phone: #208.461.9999
-;		])
-;
-;		; named paths in an object
-;		"First^^: /name/first:<8| Last^^: /name/last:8| phone^^: /name/phoneX" (context [
-;			name: context [first: "Gregg" last: "Irwin" phone: #208.461.9999]
-;		])
-;
-;		; named fields in a map
-;		"First^^: /first:<8| Last^^: /last:8| phone^^: /phoneX" #(
-;			first: "gregg" last: "irwin" phone: #208.461.0000
-;		)
-;
-;		; named paths in a map. Nicer escapes
-;		"First: /name/first:<8| Last: /name/last:8| phone: /name/phoneX" #(
-;			name: #(first: "gregg" last: "irwin" phone: #208.461.0000)
-;		)
+		[Color (:< 10) number1 (/3) number2 (/5 :z)  float (:< 5 2) . newline] ["Red" 2 3 -45.6]
+
+		; word or lit-word style name are both acceptable
+		[Color (col-1)| idx3 (/3 acct)| num2 (/N2 :< 'general)| pi (system/words/pi :< fixed)| ((1 + 1)) (now/time)] [
+			"Red" n2 2 3 n4 -45.6
+		]
+
+		; Flags adjacent to named key		
+		[Color (:<5)| idx3 (/3 :Z3)| num2 (/N2:<5)| pi (system/words/pi :< 5 2)| ((1 + 1)) (now/time)] [
+			"Red" n2 2 3 n4 -45.6
+		]
+
+		[Color (:<5)| idx3 (/3:Z3)| num2 (/N2:<5)| pi (system/words/pi :<5 2)| ((1 + 1))(:z3) |(now/time/precise 10)|(/fn)] (compose [
+			"Red" n2 2 3 n4 -45.6 fn (does [42])
+		])
+
+		; named fields in an block
+		; Can't stick width up against flags. It will be silently consumed.
+		[First: (/first:< 8)| Last: (/last 8)| phone: (/phoneX)] [
+			first: "Gregg" last: "Irwin" phone: #208.461.9999
+		]
+
+		; named paths in an block
+		; Can't stick flags up against path keys
+		[First: (name/first :< 8)| Last: (name/last 8)| phone: (name/phoneX)] [
+			name: [first: "Gregg" last: "Irwin" phone: #208.461.9999]
+		]
+
+		; named fields in an object
+		[First: (/first :< 8)| Last: (/last 8)| phone: (/phoneX)] (context [
+			first: "Gregg" last: "Irwin" phone: #208.461.9999
+		])
+
+		; named paths in an object
+		[First: (name/first :< 8)| Last: (name/last 8)| phone: (name/phoneX)] (context [
+			name: context [first: "Gregg" last: "Irwin" phone: #208.461.9999]
+		])
+
+		; named fields in a map
+		[First: (/first :< 8)| Last: (/last 8)| phone: (/phoneX)] #(
+			first: "gregg" last: "irwin" phone: #208.461.0000
+		)
+
+		; named paths in a map. Nicer escapes
+		[First: (name/first :< 8)| Last: (name/last 8)| phone: (name/phoneX)] #(
+			name: #(first: "gregg" last: "irwin" phone: #208.461.0000)
+		)
 
 	]
 	run-apply-tests: does [
