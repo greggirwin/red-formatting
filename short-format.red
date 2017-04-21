@@ -179,9 +179,12 @@ short-format-ctx: context [
 	apply-format-style: func [v style][
 		;print ['apply-format-style v style]
 		either number? v [
-			format-number-with-style :v style
+			any [
+				format-number-with-style :v style
+				to tag! rejoin ["Unknown style: " style]
+			]
 		][
-			"TBD: apply-format-style for non-number"
+			<TBD: apply-format-style for non-number>
 		]
 	]
 	
