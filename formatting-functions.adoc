@@ -8,7 +8,7 @@ https://powerman.name/doc/asciidoc
 _**XXX is far from being implemented, mention it here?**_
 ////
 
-== Introduction
+= Introduction
 
 The purpose of this document is to: 
 
@@ -17,7 +17,7 @@ The purpose of this document is to:
 * Raise questions about what features to support
 
 
-== Overview
+= Overview
 
 While chatting with Nenad about a formatting system, the basic goals he
 outlined were:
@@ -58,7 +58,7 @@ sky design falls apart. Only by building things will you start to
 really feel what works, what doesn't, and where the most devilish
 details start to pop up.
 
-== Use Cases
+= Use Cases
 
 - Format single values
 - Format a block of values
@@ -78,7 +78,7 @@ details start to pop up.
 - Support international formatting
 - Support named formats
 
-== Goals and Design Decisions
+= Goals and Design Decisions
 
 I looked at a lot of formatting systems over time, and they all
 boil down to a few main paradigms, each just adding their own
@@ -126,7 +126,7 @@ in mind. The goal is not to be all things to all people, or to
 support existing formats because blub programmers will be happy to
 see it and may adopt Red (they won't). 
 
-=== General dialect thoughts.
+== General dialect thoughts.
 
 - Sigils should be chosen for use in a Red context, not simply
 taken from other languages. This is important. We can't judge
@@ -146,24 +146,25 @@ If you've ever had to write formatted output for business use,
 you know this is not the case, and a *huge* amount of effort goes
 into the tiny details. To this end, we won't have a single dialect
 that covers all our needs, even if there ends up being a single
-`format` function that is an entry point.
+`format` function that is an entry point. Scientific computing is
+also growing, and I think we need to consider that target.
 
-== Values
+= Values
 
 We should leverage types for all they're worth. While it will be nice of
-us to support formatting float! as percent!, or as money! (AHHH!), we
+us to support formatting float as percent, or as money (AHHH!), we
 really need to tell people to use appropriate datatypes.
 
 Being able to access values, when formatting more than a single value at
 at time, including structured values, is convenient. The ability to do
 this has to be balanced against complexity and risk (security).
 
-== Interpolation
+= Interpolation
 
 In addition to interpolating values in strings, as other languages do,
 we should be able to interpolate formatted values into blocks. 
 
-== Masks versus specifications
+= Masks versus specifications
 
 Formatting via masks has a rich history. "#,##0.00" tells you what it's
 going to look like, at least roughly. It's a WYSIWYG model. You can tell
@@ -182,20 +183,20 @@ behavior isn't always clear. Once you take into account sign options,
 alignment, group separators, and alternate fill characters.
 
 
-== Format Styles (Named formats)
+= Format Styles (Named formats) TBD
 
 Long format masks don't work well in interpolated strings, and are a pain
 to type repeatedly. Terse, short-format specs aren't always immediately
 clear in what their output looks like. The strengths of one are the 
 weaknesses of the other. The solution I'm moving toward is "named styles".
-It's not a new concept, but the approach I've taken is more like using
+It's not a new concept, but the approach I will take is more like using
 style sheets than trying to build in every style and locale combination.
 The library of them will naturally grow over time, and may become standard,
 especially in larger internationalized systems. The standard system should
 cover basic needs, and allow users to easily extend it.
 
 
-== Short Formats (ala `printf`)
+= Short Formats (ala `printf`)
 
 Short-formats are like `printf`, but not exactly the same. Don't compare
 the output to `printf` as a point of reference.
@@ -237,7 +238,7 @@ Escaping the sigil with the standard escape character isn't beautiful either
 we already have a known escape pattern.
 
 
-== Contexts and Functions
+= Contexts and Functions
 
 _**There are some long and some terrible names in place. Known and sometimes intentional.**_
 
@@ -257,12 +258,12 @@ public API, and functions that may be useful and so are exported
 from the contexts. We'll label these Private, Major, and Minor,
 respectively.
 
-=== List of current funcs
+== List of current funcs
 
 ....
     Name                     Type   Purpose
 
-    Composite                Major  Replace :( ... ): sections in a string with their evaluated results.
+    composite                Major  Replace :( ... ): sections in a string with their evaluated results.
     ordinal-suffix           Minor  Return the ordinal suffix for a number (th, st, nd, rd, etc.)
     as-ordinal               Minor  Return the ordinal string for a number (1st, 2nd, 3rd, etc.)
     format-bytes             Major  Return a string containing the size and units, auto-scaled by default
@@ -275,6 +276,8 @@ respectively.
     short-form               Major  Format and substitute values into a template string
     block-form               Major  Format and substitute values into a template block
     format                   Major  General formatting entry point (TBD)
+    
+    (more to come)
 ....
 
 Other helper funcs will also be added. `Format` will be the main entry point,
@@ -286,7 +289,7 @@ capitalization and case control. Those aren't currently included.
 
 
 
-=== Composite
+== Composite
 
 > "Replace :( ... ): sections with their evaluated results."
 
@@ -322,8 +325,13 @@ can treat them as errors, or just pass through them, so they will be visible in
 the output. We can support both behaviors with a refinement, and then just need
 to choose the default.
 
-Examples:
+Spec:
+....
+    data [string! file! url!]
+    /err-val e "Use instead of formed error info from eval error"
+....
 
+Examples:
 ....
 Composite
     ""                      == ""
@@ -360,7 +368,7 @@ Composite/err-val input "#ERR"
     "ax :(1 / 0): xb"       == "ax #ERR xb"
 ....
 
-=== ordinal-suffix
+== ordinal-suffix
 
 > Return the ordinal suffix for a number (th, st, nd, rd, etc.)
 
@@ -370,7 +378,7 @@ may not be worth it though.
 
 Spec:
 ....
-	val [integer!]
+    val [integer!]
 ....
 
 Examples:
@@ -385,7 +393,7 @@ Examples:
     == th
 ....
 
-=== as-ordinal
+== as-ordinal
 
 > Return the ordinal string for a number (1st, 2nd, 3rd, etc.)
 
@@ -395,7 +403,7 @@ so great.
 
 Spec:
 ....
-	val [integer!]
+    val [integer!]
 ....
 
 Examples:
@@ -410,7 +418,7 @@ Examples:
     == "124th"
 ....
 
-=== format-bytes
+== format-bytes
 
 > Return a string containing the size and units, auto-scaled by default
 
@@ -418,10 +426,10 @@ File sizes anyone? Download progress?
 
 Spec:
 ....
-	size [number!]
-	/to scale "Rounding precision; default is 1"
-	/as unit [word!] "One of [bytes KB MB GB TB PB EB ZB YB]"
-	/sep  ch [char! string!] "Separator to use between number and unit"
+    size [number!]
+    /to scale "Rounding precision; default is 1"
+    /as unit [word!] "One of [bytes KB MB GB TB PB EB ZB YB]"
+    /sep  ch [char! string!] "Separator to use between number and unit"
 ....
 
 Examples:
@@ -442,21 +450,21 @@ Examples:
     == "500 bytes"
 ....
 
-=== format-logic/mold-logic
+== format-logic/mold-logic
 
 > Format a logic value as a string, custom or named format
 
 Spec:
 ....
     form-logic
-    	value [logic!] "If a custom format is used, fmt/1 is for true, fmt/2 for false"
-    	fmt   [word! string! block!] "Custom format, or one of [true-false on-off yes-no TF YN]"
+        value [logic!] "If a custom format is used, fmt/1 is for true, fmt/2 for false"
+        fmt   [word! string! block!] "Custom format, or one of [true-false on-off yes-no TF YN]"
 
     mold-logic
-		value [logic!]
-		/true-false "(default)"
-		/on-off
-		/yes-no
+        value [logic!]
+        /true-false "(default)"
+        /on-off
+        /yes-no
 ....
 
 We have alternate lexical forms for logic values, but no standard way to create
@@ -483,7 +491,7 @@ Examples:
     == yes-no
 ....
 
-=== form-num-with-group-seps
+== form-num-with-group-seps
 
 > Insert group separators into a numeric string
 
@@ -493,9 +501,9 @@ the number in reverse, inserting separator values every N digits.
 
 Spec:
 ....
-	num [number! any-string!]
-	/with sep [string! char!]
-	/every ct [integer!]
+    num [number! any-string!]
+    /with sep [string! char!]
+    /every ct [integer!]
 ....
 
 Examples:
@@ -508,7 +516,7 @@ Examples:
 == "1'23'45'67.89"
 ....
 
-=== format-by-width
+== format-by-width
 
 > Formats a number given a total length and a maximum number of decimal digits.
 
@@ -528,14 +536,14 @@ done in the current code.
 
 Spec:
 ....
-	value   [number!]  "The value to format"
-	tot-len [integer!] "Minimum total width. (right justified, never truncates)"
-	dec-len [integer!] "Maximum digits to the right of the decimal point. (left justified, may round)"
-	/left   "Left align"
-	/right  "Right align (default)"
-	/use+   "Include + sign for positive values"	
-	/with
-		ch  [char!]    "Alternate fill char (default is space)"
+    value   [number!]  "The value to format"
+    tot-len [integer!] "Minimum total width. (right justified, never truncates)"
+    dec-len [integer!] "Maximum digits to the right of the decimal point. (left justified, may round)"
+    /left   "Left align"
+    /right  "Right align (default)"
+    /use+   "Include + sign for positive values"	
+    /with
+        ch  [char!]    "Alternate fill char (default is space)"
 ....
 
 Examples:
@@ -604,9 +612,52 @@ Examples:
 == "   +123.46"
 ....
 
-=== format-number-with-mask
+== format-number-with-mask
 
 > Return a formatted number, using a mask as a template
+
+Important note: This doesn't handle E formed numbers yet. It also
+doesn't support E to control the format string in any way. I have
+notes on both general scientific and also engineering formatting,
+which we'll probably want to support, but they aren't in place yet.
+
+Important note: Masks don't currently auto-extend, which is a nice
+feature we should include. Right now, if your number is longer than
+the mask, digits from it will continue to be included, but extra
+group separators and such are not intuited.
+
+=== Mask format
+
+    Char    Meaning
+
+	^^      Use next literal char from mask
+	0       Digit placeholder, show 0 if num has no digit there
+	?9      Digit placeholder, show space if num has no digit there
+	        (we'll pick just one of these chars eventually)
+	#       Digit placeholder, show nothing if num has no digit there
+	(       ( for negative numbers, nothing for positive
+	)       ) for negative numbers, space for positive
+	+       - for negative numbers, + for positive
+	-       - for negative numbers, space for positive
+	"..."   Literal text between quotes
+    $%£¥€¢¤ Pass thru (special char list TBD)
+    ' ·_    Group separators (final list TBD)
+    ,.      Decimal/Group separators (heuristics driven)
+    
+The `,.` Decimal/Group separators are the tricky bit. Basically, we
+parse the mask and make our best guess about which one is supposed
+to be the decimal marker, and which is the group separator. I tried
+a new approach for this, different from what I did in R2. It's more
+flexible, allows international support, etc., but it's also ugly and
+slow. Good thing it's just proof of concept for dialect design.    
+
+TBD: [
+    Should we truncate based on mask precision? Currently it is up
+    to the caller to round, but it makes sense for the mask to 
+    control rounding.
+    
+    Should we allow separators in the decimal portion?
+]
 
 Spec:
 ....
@@ -616,45 +667,269 @@ Spec:
 
 Examples:
 ....
+      Value          Mask                    Result
+    -12345.67     " ######"                 "- 12345"
+    -12345.67     "-??????"                 "- 12345"
+    -12345.67     " 999999"                 "-  12345"
+    -12345.67     "-000000"                 "-012345"
+    -12345.67     "-$000 000.000"           "-$012 345.670"
+    -12345.67     "-$999 999.999"           "-$ 12 345.67 "
+    -12345.67     "-$9_99_999.999"          "-$ 12_345.67 "
+    -12345.67     "$(999 999.999)"          "$( 12 345.67 )"
+    -12345.67     "$(### ###.999)"          "$(12 345.67 )"
+    123456.78     "£+ 999,990.000"          "£+ 123,456.780"
+    123456.78     "£ 999,990.000"           "£ 123,456.780"
+    -123456.78    "£ 999,990.000"           "-£ 123,456.780"
+    -12345.67     "-###,##0.000"            "-12,345.670"
+    -1234.67      "-###,##0.00?"            "-1,234.67 "
+    -123.45       "-###,##0.000"            "-123.450"
+    -12345.67     "-#,##0.000"              "-12,345.670"
+    -12345.67     "-##.##0,000"             "-12.345,670"
+    -12345.67     "-#.##0,000"              "-12.345,670"
+    12345.67      "-#,##0.000"              "1 2,345.670"       ; Mask too short; note glitch.
+    12345.67      "#,##0.000"               "12,345.670"
+    12345.67      "+#,##0.000"              "+12,345.670"
+    -12345.6789   "-#,###,##0.0##,###,#"    "-0.01,234,5"
+    -12345.6789   "-#.###.##0,0##.###.#"    "-..0,01.234.5"
+    -12345.6789   "-# ### ##0.0## ### #"    "- 12 345.678 9 "
+    -12345.6789   "-#'###'##0.0##'###'#"    "-12'345.678'9"
+    -12345.67     "-£##.##0,000"            "-£12.345,670"
+    -12345.67     {-##.##0,000" F"}         "-12.345,670 F"
+    -12345.67     {"kr"-##.##0,000}         "kr-12.345,670"
+    -12345.67     "€ ##.##0,000-"           "€ 12.345,670-"
+    -12345.67     "($##.##0,000)"           "($12.345,670)"
+    -12345.67     "-£##.###.##0,000"        "-£12.345,670"
+    -12345.67     {-##.###.##0,000" F"}     "-12.345,670 F"
+    -12345.67     {"kr"-##.###.##0,000}     "kr-12.345,670"
+    -12345.67     "€ ##.###.##0,000-"       "€ 12.345,670-"
+    -12345.67     "($##.###.##0,000)"       "($12.345,670)"
+    0.0001        "0"                       "0"
+    0.0001        ".00000"                  "0.00010"
+    0.0001        "0.#"                     "0.0001"
+    0.0001        ".#"                      "0.0001"
+    0.0001        "0.#"                     "0.0001"
+    1.0e-8        ".00000"                  "0.00000001"
+    1.0e-14       ".00000"                  "0.00000000000001"
+    1e-5%         "#.000%"                  make error! [... "format-number-with-mask doesn't like -1e-5%"
+    -1e-5%        "#.000%"                  make error! [... "format-number-with-mask doesn't like -1e-5%"
+    0.4567%       "#.000%"                  "0.4567%"
+    -0.4567%      "#.000%"                  "-0.4567%"
+    1.4567%       "##,##0.000%"             "1.4567%"
+    12.4567%      "##,##0.0#"               "12.4567"
+    123.4567%     "##,##0.000%"             "123.4567%"
+    12345.6789%   "##,##0.000%"             "12,345.6789%"
+    -123.4567%    "#,##0.000%"              "-123.4567%"
+    123.4567%     "##.##0,000%"             "123,4567%"
+    -123.4567%    "#.##0,000%"              "-123,4567%"
 ....
 
-=== format-number-via-masks
+== format-number-via-masks (TBD)
 
 > Format, selecting the mask based on the number's value
 
+This concept is taken from the world of spreadsheets. Rather than you manually
+select a mask by looking at a number's value, you give the system options for
+each case you want to handle. Normally `<POSITIVE>;<NEGATIVE>;<ZERO>;<TEXT>`.
+In my R2 system, I also allowed blocks with named selectors, which I plan to 
+extend in the Red system to support functions as tests, which will let the
+system handle special values like `1.#INF` and `1.#NaN`. Another likely 
+extension is the ability to use short-format specifications and named styles
+for each section or test.
+
 Spec:
 ....
+    n [number!]
+    masks [string! block! map!] "Masks appplied based on the sign or special value of n"
 ....
 
 Examples:
 ....
+    TBD
 ....
 
-=== format-number-with-style
+== format-number-with-style
 
 > Return a formatted number, by named style
 
+Predefined styles may dispatch to any other internal function to handle
+formatting, or may do it directly. In the future, it could also allow styles
+to be created and used directly.
+
+=== styles
+
+    Name            Format
+
+    r-general       r- prefix means to use Red (round-trip) group sep (')
+    r-standard
+    r-fixed 
+    r-money
+    r-currency
+    r-percent
+    r-ordinal
+    r-hex   
+            
+    general         Comma as group sep
+    standard
+    fixed   
+    money   
+    currency
+    percent 
+    ordinal 
+
+    ;TBD E scientific
+            
+    base-64 
+    hex     
+    min-hex         Hex with no leading 0s
+    C-hex           Hex with "0x" prefix
+    bin     
+    binary  
+    min-bin         Binary with no leading 0s
+            
+    ;TBD accounting      [pos " #,##0.00 " neg "(#,##0.00)" zero "-" none ""]
+
+
 Spec:
 ....
+    n [number!]
+    name [word!] "Named or direct style" ; object! map!
 ....
 
 Examples:
 ....
+    >> format-number-with-style 12345.678 'r-general
+    == "12'345.678"
+    >> format-number-with-style 12345.678 'r-standard
+    == "12'345.678"
+    >> format-number-with-style 12345.678 'r-fixed
+    == "12'345.68"
+    >> format-number-with-style 12345.678 'r-currency
+    == "$12,345.68"
+    >> format-number-with-style 12345.678 'r-money
+    == "$12,345.68"
+    >> format-number-with-style 12345.678 'r-percent
+    == "1'234'567.8%"
+    >> format-number-with-style 12345.678 'r-ordinal
+    == "12'345th"
+
+    >> format-number-with-style 12345.678 'general
+    == "12,345.678"
+    >> format-number-with-style 12345.678 'standard
+    == "12,345.678"
+    >> format-number-with-style 12345.678 'fixed
+    == "12,345.68"
+    >> format-number-with-style 12345.678 'currency
+    == "$12,345.68"
+    >> format-number-with-style 12345.678 'money
+    == "$12,345.68"
+    >> format-number-with-style 12345.678 'percent
+    == "1,234,567.8%"
+    >> format-number-with-style 12345.678 'ordinal
+    == "12,345th"
+
+    >> format-number-with-style 32767 'hex
+    == "00007FFF"
+    >> format-number-with-style 32767 'min-hex
+    == "7FFF"
+    >> format-number-with-style 32767 'C-hex
+    == "0x00007FFF"
+    >> format-number-with-style 32767 'bin
+    == "00000000000000000111111111111111"
+    >> format-number-with-style 32767 'min-bin
+    == "111111111111111"
+    >> 
 ....
 
-=== short-form
+== short-form (printf, but not)
 
 > Format and substitute values into a template string
 
+This is where things start to get fun. The basic idea is simple, you mark
+up a string with placeholders where formatted data will be substituted.
+The system finds those markers, figures out the formatting details, pulls
+a piece of data, applies the format, and builds a new string with all the
+replacements made.
+
+Placeholders (let's call them fields) look like this:
+
+* `/[key][:[flags][width][.precision]]['style]`
+* `:[flags][width][.precision]['style]`
+* `:[flags]['style]`
+
+That is a key that starts with a slash, with an optional format. Or just
+a format, which starts with a colon. Take a deep breath, there's a lot
+going on here.
+
+A `key` can be an integer, name, or expression to evaluate. Where `printf`
+naturally consumes the next arg for each field, we do the same thing if
+no key is given. Thats where your field starts with `:` rather than `/`.
+If there *is* a key, how it behaves depends on the data. Basically, we 
+have 5 types of keys and two main categories of data. The data categories
+we'll call `structured` and `unstructured`. Structured data are blocks,
+maps, and objects. Everything else is unstructured.
+
+== Key types
+
+Remember, keys start with `/` as their sigil in the template string
+
+....
+    Type        Format
+    
+    none        :<format only>
+    integer     /3
+    paren       /(calc-value)
+    path        /name/last
+    word        /last-name
+....
+
+=== Unstructured
+
+....
+    Type        Action
+    
+    none        Use the entire data value
+    integer     If data is a series, pick from it; else none
+    paren       Do paren
+    path        Evaluate the path, e.g., now/time
+    word        Evaluate the word, e.g., global-var
+....
+
+=== Structured
+
+....
+    Type        Action
+    
+    none        If data is a series, pick first and advance; else none
+    integer     Pick from data if series, or from values-of data if object/map
+    paren       Do paren
+    path        Try to find deep key in data first, else evaluate the path
+    word        Try to find key in data first, else evaluate the word
+....
+
+Something interesting to consider here is whether key lookups should always
+start at the head of the series, as it may have been advanced. This gets
+especially tricky, because you might have advanced an odd/unknown number of
+values. We might also then want a way to skip to a new index in the values.
+For that reason, we may discourage the mixing of keyed and unkeyed access.
+People may confuse themselves, and I am people.
+
+== Format specifications
+
+Formats follow the basic idea from `printf`, but do not share its exact syntax.
+
+
+
 Spec:
 ....
+    string [string!] "Template string containing `/value:format` fields and literal data"
+    data "Value(s) to apply to template fields"
 ....
 
 Examples:
 ....
 ....
 
-=== block-form
+== block-form
 
 > Format and substitute values into a template block
 
@@ -662,7 +937,7 @@ Spec:
 ....
 ....
 
-=== format
+== format
 
 > General formatting entry point (TBD)
 
