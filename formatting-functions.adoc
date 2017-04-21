@@ -885,7 +885,7 @@ Remember, keys start with `/` as their sigil in the template string
 === Unstructured
 
 ....
-    Type        Action
+    Key Type    Action
     
     none        Use the entire data value
     integer     If data is a series, pick from it; else none
@@ -897,7 +897,7 @@ Remember, keys start with `/` as their sigil in the template string
 === Structured
 
 ....
-    Type        Action
+    Key Type    Action
     
     none        If data is a series, pick first and advance; else none
     integer     Pick from data if series, or from values-of data if object/map
@@ -1037,11 +1037,11 @@ apply-test
 apply-test
     INPUT:  {Color :<10, number1 :3, number2 :05, float :<5.2.\n}
     VALUE:  ["Red" 2 3 -45.6]
-    OUTPUT: {Color Red       , number1 Red, number2 00Red, float Red  .\n}
+    OUTPUT: {Color Red       , number1   2, number2 00003, float -45.6.\n}
 apply-test
     INPUT:  "Color: :<10, number1/ :3, http://:2, float: :<5.2"
     VALUE:  ["Red" 3 8080 -45.6]
-    OUTPUT: {Color: Red       , number1/ Red, http://Red, float: Red  }
+    OUTPUT: {Color: 8080      , number1/    , http://  , float:      }
 apply-test
     INPUT:  {Color :'general | idx3 /3:'money | num2 /N2:<'general | pi /system/words/pi:<'fixed | /(1 + 1) /now/time}
     VALUE:  [ "Red" n2 2 3 n4 -45.6 ]
@@ -1173,6 +1173,10 @@ apply-test
     INPUT:  [((1 + 1))]
     VALUE:  123.456
     OUTPUT: "2"
+apply-test
+    INPUT:  [Color: (:< 10) number1 (:_ 3) number2 (:z 5) xxx]
+    VALUE:  ["Red" 2 3 -45.6]
+    OUTPUT: "Color: Red        number1   2 number2 00003 xxx"
 apply-test
     INPUT:  [Color: (:< 10) number1 (/3) number2 () xxx]
     VALUE:  ["Red" 2 3 -45.6]

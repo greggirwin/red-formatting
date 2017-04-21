@@ -546,7 +546,7 @@ block-form-tests: context [
 		[(system/words/pi)] 123.456
 		[((1 + 1))] 123.456
 
-		[Color: (:< 10) number1 (/3) number2 () xxx] ["Red" 2 3 -45.6]		; :z /N hangs
+		[Color: (:< 10) number1 (:_ 3) number2 (:z 5) xxx] ["Red" 2 3 -45.6]		; :z /N hangs
 		[Color: (:< 10) number1 (/3) number2 (:z "xxx") xxx] ["Red" 2 3 -45.6]		; :z /N hangs
 		[Color: (:< 10) number1 (/3) number2 (:z /5) xxx] ["Red" 2 3 -45.6]		; :z /N hangs
 		[Color: (:< 10) number1 (/3) number2 (/5 :z)] ["Red" 2 3 -45.6]

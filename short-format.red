@@ -249,6 +249,7 @@ short-format-ctx: context [
 	; Temp helper to dispatch by spec/key type and data.
 	; Exported for testing from %format.red 
 	set 'apply-format-by-key+data func [spec [object!] data][
+		;print [w mold data unstruct-data? data spec/key]
 		; If we allow objects and maps to be used, so you can select by
 		; key, they won't work for format-only fields or numeric index
 		; access.
@@ -269,7 +270,7 @@ short-format-ctx: context [
 			; have advanced an odd/unknown number of values. We might also
 			; then want a way to skip to a new index in the values.
 			case [
-				none?    spec/key [if series? data [first+ data]]	; unkeyed field, take sequentially from data
+				none?    spec/key [if series? data [take data]]	; unkeyed field, take sequentially from data
 				integer? spec/key [pick-val data spec/key]			; index key
 				paren?   spec/key [do-paren spec/key]				; expression to evaluate
 				path?    spec/key [get-path-key data spec/key]		; deep key
@@ -288,6 +289,7 @@ short-format-ctx: context [
 		data "Value(s) to apply to template fields"
 	][
 		result: clear ""
+		if series? data [data: copy data]
 		if none? spec: parse-as-short-format string [return none]	; Bail if the format string wasn't valid
 		if object? spec [return apply-format-by-key+data spec data]	; We got a single format spec
 		collect/into [

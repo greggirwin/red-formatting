@@ -6,6 +6,7 @@ Red [
 	Author:  "Gregg Irwin"
 	Notes: {
 		(DONE) means done enough for initial review and RFC
+		- block-format (printf) (DONE)
 		- masked format (DONE)
 		- short-format/printf (DONE)
 		- Format by width (DONE)
@@ -589,7 +590,7 @@ formatting: context [
 	]
 	
 	set 'format-number-with-style function [
-		"Return a formatted number, selecting a mask as a template based on the number's value"
+		"Return a formatted number, by named style"
 		n [number!]
 		name [word!] "Named or direct style" ; object! map!
 	][
@@ -651,7 +652,7 @@ formatting: context [
 	; natural to use whole.deci. The question is how much "discussion" that
 	; will cause. 
 	set 'format-number-by-width function [
-		"Formats a decimal with a minimum number of digits on the left and a maximum number of digits on the right. No separators added."
+		"Formats a number given a total length and a maximum number of decimal digits. No separators added."
 		value   [number!]  "The value to format"
 		tot-len [integer!] "Minimum total width. (right justified, never truncates)"
 		dec-len [integer!] "Maximum digits to the right of the decimal point. (left justified, may round)"
@@ -707,7 +708,7 @@ format-number: function [
 ;-------------------------------------------------------------------------------
 ; This is the block equivalent to the short-form string interpolation formatter.
 ; TBD: It would be really nice if they could share a common infrastructure.
-do %short-format.red
+if not value? 'short-format-ctx [do %short-format.red]
 
 block-format-ctx: context [
 
@@ -749,7 +750,7 @@ block-format-ctx: context [
 	]
 	width=: [set =width integer!]
 	prec=:  [set =prec integer!]
-	style=: [set =style [word! | lit-word!]]
+	style=: [set =style word!]
 	key=: [
 		set =key [refinement! | path! | paren!] (
 			if refinement? =key [=key: load form =key]	;=key: to either parse form =key [some digit=] [integer!][word!]
@@ -813,11 +814,12 @@ block-format-ctx: context [
 	with short-format-ctx [			; leverage internals now, work on commonality
 
 		set 'block-form function [
-			"Format and substitute values into a template string"
+			"Format and substitute values into a template block"
 			input [block!] "Template block containing `(/value:format)` fields and literal data"
 			data "Value(s) to apply to template fields"
 		][
-			result: clear [] ;""
+			result: clear []
+			if series? data [data: copy data]
 			if none? spec: parse-as-block-format input [return none]		; Bail if the format string wasn't valid
 			if object? spec [return apply-format-by-key+data spec data]		; We got a single format spec
 			collect/into [
