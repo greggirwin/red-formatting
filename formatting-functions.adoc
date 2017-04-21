@@ -262,7 +262,7 @@ respectively.
 ....
     Name                     Type   Purpose
 
-    Composite                Major  Replace :( ... ): sections with their evaluated results.
+    Composite                Major  Replace :( ... ): sections in a string with their evaluated results.
     ordinal-suffix           Minor  Return the ordinal suffix for a number (th, st, nd, rd, etc.)
     as-ordinal               Minor  Return the ordinal string for a number (1st, 2nd, 3rd, etc.)
     format-bytes             Major  Return a string containing the size and units, auto-scaled by default
@@ -364,53 +364,255 @@ Composite/err-val input "#ERR"
 
 > Return the ordinal suffix for a number (th, st, nd, rd, etc.)
 
+The reason for not keeping this private is that it may be useful when combined
+with markup language generation, where a superscript style may be applied. It
+may not be worth it though.
+
+Spec:
+....
+	val [integer!]
+....
+
 Examples:
 ....
+    >> ordinal-suffix 1
+    == st
+    >> ordinal-suffix 2
+    == nd
+    >> ordinal-suffix 3
+    == rd
+    >> ordinal-suffix 4
+    == th
 ....
 
 === as-ordinal
 
 > Return the ordinal string for a number (1st, 2nd, 3rd, etc.)
 
+Sure, you can say "The value at index 1234", or list the top ranked players as
+"First, Second, Third", but "You came in two hundred and seventy second" isn't
+so great.
+
+Spec:
+....
+	val [integer!]
+....
+
 Examples:
 ....
+    >> as-ordinal 1
+    == "1st"
+    >> as-ordinal 2
+    == "2nd"
+    >> as-ordinal 3
+    == "3rd"
+    >> as-ordinal 124
+    == "124th"
 ....
 
 === format-bytes
 
 > Return a string containing the size and units, auto-scaled by default
 
-Examples:
+File sizes anyone? Download progress?
+
+Spec:
 ....
+	size [number!]
+	/to scale "Rounding precision; default is 1"
+	/as unit [word!] "One of [bytes KB MB GB TB PB EB ZB YB]"
+	/sep  ch [char! string!] "Separator to use between number and unit"
 ....
 
-=== format-logic
+Examples:
+....
+    >> format-bytes 4000
+    == "4KB"
+    >> format-bytes 400000
+    == "391KB"
+    >> format-bytes 400000000
+    == "381MB"
+    >> format-bytes/as 400000000 'KB
+    == "390625KB"
+    >> format-bytes/as 400000000 'GB            ; Note rounding!
+    == "0GB"
+    >> format-bytes/as/to 400000000 'GB .01
+    == "0.37GB"
+    >> format-bytes/sep 500 #" "
+    == "500 bytes"
+....
+
+=== format-logic/mold-logic
 
 > Format a logic value as a string, custom or named format
 
+Spec:
+....
+    form-logic
+    	value [logic!] "If a custom format is used, fmt/1 is for true, fmt/2 for false"
+    	fmt   [word! string! block!] "Custom format, or one of [true-false on-off yes-no TF YN]"
+
+    mold-logic
+		value [logic!]
+		/true-false "(default)"
+		/on-off
+		/yes-no
+....
+
+We have alternate lexical forms for logic values, but no standard way to create
+them. Form-logic returns a string, while mold-logic returns a word and doesn't
+support custom formats. Useful in code generators.
+
 Examples:
 ....
+    >> format-logic true 'on-off
+    == "On"
+    >> format-logic true 'yes-no
+    == "Yes"
+    >> format-logic true 'TF
+    == "T"
+    >> format-logic true 'YN
+    == "Y"
+    >> format-logic true [Yeah! No-way!]
+    == "Yeah!"
+    >> format-logic false [Yeah! No-way!]
+    == "No-way!"
+    >> mold-logic true 'on-off
+    == on-off
+    >> mold-logic true 'yes-no
+    == yes-no
 ....
 
 === form-num-with-group-seps
 
 > Insert group separators into a numeric string
 
+Format masks also do this, with more control, but they are currently much slower
+than this function. This function is very simple, just walking the whole part of
+the number in reverse, inserting separator values every N digits.
+
+Spec:
+....
+	num [number! any-string!]
+	/with sep [string! char!]
+	/every ct [integer!]
+....
+
 Examples:
 ....
+>> form-num-with-group-seps 1234567.89
+== "1,234,567.89"
+>> form-num-with-group-seps/with 1234567.89 #"'"
+== "1'234'567.89"
+>> form-num-with-group-seps/with/every 1234567.89 #"'" 2
+== "1'23'45'67.89"
 ....
 
 === format-by-width
 
-> Formats a number given a total length and a maximum number of decimal digits. No separators added.
+> Formats a number given a total length and a maximum number of decimal digits.
+
+No separators are added by this function. It is still a little more involved,
+as it lets you control width, precision, alignment, sign, and fill char. Just
+allowing the fill char to be #"0" adds logic, when you take the sign into 
+account. 
+
+Some behavior still TBD. e.g., should prec be fixed or max digits. Another
+internal func uses a separate `align` param, rather than `left/right`
+refinements. Using `left/right` saves a param over `/align dir` and will catch
+more errors.
+
+Short-form could use this internally. It doesn't right now, just because of
+the way experiments progressed. Very little code sharing refactoring has been
+done in the current code.
+
+Spec:
+....
+	value   [number!]  "The value to format"
+	tot-len [integer!] "Minimum total width. (right justified, never truncates)"
+	dec-len [integer!] "Maximum digits to the right of the decimal point. (left justified, may round)"
+	/left   "Left align"
+	/right  "Right align (default)"
+	/use+   "Include + sign for positive values"	
+	/with
+		ch  [char!]    "Alternate fill char (default is space)"
+....
 
 Examples:
 ....
+>> format-number-by-width 0 0 0
+== "0"
+>> format-number-by-width 1 0 0
+== "1"
+>> format-number-by-width 123.456 0 0
+== "123"
+>> format-number-by-width -123.456 0 0
+== "-123"
+
+>> format-number-by-width 10.5% 0 0
+== "11%"
+>> format-number-by-width -10.5% 0 0
+== "-11%"
+>> format-number-by-width/with -10.5% 8 2 #"0"
+== "-0010.5%"
+>> format-number-by-width/with -10.56% 8 2 #"0"
+== "-010.56%"
+
+>> format-number-by-width/with -10.5 8 2 #"0"
+== "-00010.5"
+>> format-number-by-width/with/use+ 10.5 8 2 #"0"
+== "+00010.5"
+>> format-number-by-width/with/left 10.5 8 2 #"0"
+== " 10.5000"
+>> format-number-by-width/with 10.5 8 2 #"0"
+== "000010.5"
+>> 
+>> format-number-by-width/with -10.5 8 2 #"0"
+== "-00010.5"
+>> format-number-by-width/with -10.5 8 2 #"_"
+== "___-10.5"
+>> format-number-by-width/with -10.5% 8 2 #"0"
+== "-0010.5%"
+>> format-number-by-width/with/use+ 10.5 8 2 #"_"
+== "___+10.5"
+
+>> format-number-by-width 0 5 0
+== "    0"
+>> format-number-by-width 1 5 0
+== "    1"
+>> format-number-by-width 123.456 5 0
+== "  123"
+>> format-number-by-width -123.456 5 0
+== " -123"
+>> format-number-by-width 123.456 5 2
+== "123.46"
+>> format-number-by-width -123.456 5 2
+== "-123.46"
+
+>> format-number-by-width 123.456 10 0
+== "       123"
+>> format-number-by-width -123.456 10 0
+== "      -123"
+>> format-number-by-width/left 123.456 10 2
+== " 123.46   "
+>> format-number-by-width/right -123.456 10 2
+== "   -123.46"
+
+>> format-number-by-width/left/use+ 123.456 10 2
+== "+123.46   "
+>> format-number-by-width/right/use+ 123.456 10 2
+== "   +123.46"
 ....
 
 === format-number-with-mask
 
 > Return a formatted number, using a mask as a template
+
+Spec:
+....
+	n [number!]
+	mask [string!]
+....
 
 Examples:
 ....
@@ -420,6 +622,10 @@ Examples:
 
 > Format, selecting the mask based on the number's value
 
+Spec:
+....
+....
+
 Examples:
 ....
 ....
@@ -427,6 +633,10 @@ Examples:
 === format-number-with-style
 
 > Return a formatted number, by named style
+
+Spec:
+....
+....
 
 Examples:
 ....
@@ -436,6 +646,10 @@ Examples:
 
 > Format and substitute values into a template string
 
+Spec:
+....
+....
+
 Examples:
 ....
 ....
@@ -444,9 +658,17 @@ Examples:
 
 > Format and substitute values into a template block
 
+Spec:
+....
+....
+
 === format
 
 > General formatting entry point (TBD)
+
+Spec:
+....
+....
 
 Examples:
 ....
