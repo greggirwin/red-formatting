@@ -150,7 +150,7 @@ that covers all our needs, even if there ends up being a single
 
 == Contexts and Functions
 
-_**There are some long and terrible names in place. Known and sometimes intentional.**_
+_**There are some long and some terrible names in place. Known and sometimes intentional.**_
 
 Naming is important, and more thought will go into things. As I
 work through examples, I sometimes need to give things names that
@@ -158,6 +158,43 @@ are very clear, breaking pieces down by named functionality. But
 I can't pick the best names, because the structure isn't nailed
 down yet. This also affects dependencies. As code is merged, 
 more common bits can be shared.
+
+There are likely to be multiple contexts under the formatting
+banner, but the current code structure isn't intended to be the
+final design.
+
+There are functions for internal use, functions intended as the
+public API, and functions that may be useful and so are exported
+from the contexts. We'll label these Private, Major, and Minor,
+respectively.
+
+=== List of current funcs
+
+....
+    Name                     Type   Purpose
+
+    Composite                Major  Replace :( ... ): sections with their evaluated results.
+    ordinal-suffix           Minor  Return the ordinal suffix for a number (th, st, nd, rd, etc.)
+    as-ordinal               Minor  Return the ordinal string for a number (1st, 2nd, 3rd, etc.)
+    format-bytes             Major  Return a string containing the size and units, auto-scaled by default
+    format-logic             Major  Format a logic value as a string, custom or named format
+    form-num-with-group-seps Minor  Insert group separators into a numeric string
+    format-by-width          Minor  Formats a number given a total length and a maximum number of decimal digits. No separators added.
+    format-number-with-mask  Minor  Return a formatted number, using a mask as a template
+    format-number-via-masks  Minor  Format, selecting the mask based on the number's value
+    format-number-with-style Minor  Return a formatted number, by named style
+    short-form               Major  Format and substitute values into a template string
+    block-form               Major  Format and substitute values into a template block
+    format                   Major  General formatting entry point (TBD)
+....
+
+Other helper funcs will also be added. `Format` will be the main entry point,
+and will dispatch to sub-funcs like `format-number`, `format-date-time`, etc.,
+based on datatype. It may also dispatch based on style. e.g., if the style name
+given is `bytes`, it will dispatch to `format-bytes`. Row, column, and table
+formatting may be addded as well. I have an old string formatter, including
+capitalization and case control. Those aren't currently included.
+
 
 
 === Composite
@@ -188,7 +225,8 @@ get and set values, and parens indicate evaluation.
 
 Putting the colons on the outside gives you a clean paren expression on the
 inside. Rebol used `<% ... %>` as its markers, inspired by PHP I think, and
-comfortable for tag-people I suppose. 
+comfortable for tag-people I suppose. We shouldn't rule a tag-based syntax
+out entirely.
 
 One of the big questions is what to do if there are mismatched expr markers. We
 can treat them as errors, or just pass through them, so they will be visible in
@@ -212,16 +250,73 @@ Composite
     "):"                    == "):"
     ")::("                  == ")::("
 
+	"alpha: :(rejoin ['a 'b]): answer: :(42 / 3):" == "alpha: ab answer: 14"
+
+    ; No sample data to go with this in the doc
+	{
+		name: :(form-full-name cust):
+		rank: :(as-ordinal index? find scores cust):
+		ser#: :(cust/uuid):
+	}
+
     ; With spaces around the expressions
 	"a :('--): b"           == "a -- b"                                             
 	"a :('--):"             == "a --"                                                 
 	":('--): b"             == "-- b"                                                 
 	"ax :(1 / 0): xb"       == "ax  *** Error: zero-divide Where: 1 / 0 ***  xb"
 
-Composite/custom-error-val
+Composite/err-val input "#ERR"
+
     "ax:(1 / 0):xb"         == "ax#ERRxb"
     "ax :(1 / 0): xb"       == "ax #ERR xb"
 ....
+
+=== ordinal-suffix
+
+> Return the ordinal suffix for a number (th, st, nd, rd, etc.)
+
+=== as-ordinal
+
+> Return the ordinal string for a number (1st, 2nd, 3rd, etc.)
+
+=== format-bytes
+
+> Return a string containing the size and units, auto-scaled by default
+
+=== format-logic
+
+> Format a logic value as a string, custom or named format
+=== form-num-with-group-seps
+
+> Insert group separators into a numeric string
+
+=== format-by-width
+
+> Formats a number given a total length and a maximum number of decimal digits. No separators added.
+
+=== format-number-with-mask
+
+> Return a formatted number, using a mask as a template
+
+=== format-number-via-masks
+
+> Format, selecting the mask based on the number's value
+
+=== format-number-with-style
+
+> Return a formatted number, by named style
+
+=== short-form
+
+> Format and substitute values into a template string
+
+=== block-form
+
+> Format and substitute values into a template block
+
+=== format
+
+> General formatting entry point (TBD)
 
 
 == Values
