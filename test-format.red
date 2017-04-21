@@ -446,7 +446,7 @@ block-form-tests: context [
 		]
 	]
 	parse-specs: [
-		[('test)]
+		[(test)]
 		[(20 10)]
 		[tab (20 10) newline]
 		[(:+)]
@@ -462,19 +462,19 @@ block-form-tests: context [
 		[(/abc #xyz)]
 		[(/abc :xyz)]
 		[(a/b/c)]
-		[((code here) 'xyz)]
+		[((code here) xyz)]
 
 		[(:º)]
 		[(:¤)]
 
 		[(:< fixed)]
-		[('money)]
-		[(/num :+<>Z_ 5 2 'general)]
+		[(money)]
+		[(/num :+<>Z_ 5 2 general)]
 		[(/abc ordinal) "xyz"]
 		[(/abc 5 2 hex) (:< 5 2)]
 		[(/abc 'hex) ":xyz"]
-		[('a/b/c 'binary /key-x)]
-		[((code here) 'base-64) ]
+		[('a/b/c binary /key-x)]
+		[((code here) base-64) ]
 
 		[(system/words/pi)]
 
@@ -497,7 +497,7 @@ block-form-tests: context [
 	]
 	apply-specs: compose/only [
 		[()]			123.456
-		[('test)]          123.456
+		[(general)]          123.456
 		[( 20 10)]       123.456
 		['tab (20 10) 'newline]   123.456
 		[(:+)]         123.456
@@ -553,7 +553,7 @@ block-form-tests: context [
 		[Color (:< 10) number1 (/3) number2 (/5 :z)  float (:< 5 2) . newline] ["Red" 2 3 -45.6]
 
 		; word or lit-word style name are both acceptable
-		[Color (col-1)| idx3 (/3 acct)| num2 (/N2 :< 'general)| pi (system/words/pi :< fixed)| ((1 + 1)) (now/time)] [
+		[Color (col-1)| idx3 (/3 acct)| num2 (/N2 :< general)| pi (system/words/pi :< fixed)| ((1 + 1)) (now/time)] [
 			"Red" n2 2 3 n4 -45.6
 		]
 
