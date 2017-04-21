@@ -21,6 +21,11 @@ foreach val [
 	"ax:(1 / 0):xb"
 
 	"alpha: :(rejoin ['a 'b]): answer: :(42 / 3):"
+	{
+		name: :(form-full-name cust):
+		rank: :(as-ordinal index? find scores cust):
+		ser#: :(cust/uuid):
+	}
 
 	"a :('--): b"
 	"a :('--):"
