@@ -243,9 +243,9 @@ short-format-ctx: context [
 		; does it make sense to apply to value to every placeholder?
 		apply-short-format spec either unstruct-data? data [
 			case [
-				none?    spec/key [data]				; unkeyed field, use data
-				integer? spec/key [none]				; can't pick from this kind of data
-				paren?   spec/key [do-paren spec/key]	; expression to evaluate
+				none?    spec/key [data]						; unkeyed field, use data
+				integer? spec/key [if series? data [pick data spec/key]]	; can still try to pick from series vals
+				paren?   spec/key [do-paren spec/key]			; expression to evaluate
 				path?    spec/key [get-path-key data spec/key]	; deep key
 				'else             [attempt [do spec/key]]		; simple key name
 			]
@@ -256,11 +256,11 @@ short-format-ctx: context [
 			; have advanced an odd/unknown number of values. We might also
 			; then want a way to skip to a new index in the values.
 			case [
-				none?    spec/key [first+ data]			; unkeyed field, take sequentially from data
-				integer? spec/key [pick-val data spec/key] ;[pick data spec/key]	; index key
-				paren?   spec/key [do-paren spec/key]	; expression to evaluate
-				path?    spec/key [get-path-key data spec/key]	; deep key
-				'else [									; simple key name
+				none?    spec/key [if series? data [first+ data]]	; unkeyed field, take sequentially from data
+				integer? spec/key [pick-val data spec/key]			; index key
+				paren?   spec/key [do-paren spec/key]				; expression to evaluate
+				path?    spec/key [get-path-key data spec/key]		; deep key
+				'else [												; simple key name
 					;?? Do we want to allow functions? I'm not so sure.
 					val: select data spec/key
 					either any-function? :val [val][val]
