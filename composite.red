@@ -31,7 +31,7 @@ composite-ctx: context [
 	; they will be visible in the output. We can support both behaviors
 	; with a refinement, and then just have to choose the default.
 	set 'composite func [
-		"Replace :( ... ): sections with their evaluated results."
+		"Replace :( ... ): sections in a string with their evaluated results."
 		data [string! file! url!]
 		/err-val e "Use instead of formed error info from eval error"
 		/local expr
