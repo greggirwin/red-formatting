@@ -150,6 +150,10 @@ short-format-ctx: context [
 		]
 	]
 
+	pick-val: func [data [block! map! object!] index [integer!]] [
+		pick either block? data [data][values-of data] index
+	]
+
 	sign-from-flags: func [
 		spec [object! block! map!]
 		value
@@ -253,7 +257,7 @@ short-format-ctx: context [
 			; then want a way to skip to a new index in the values.
 			case [
 				none?    spec/key [first+ data]			; unkeyed field, take sequentially from data
-				integer? spec/key [pick data spec/key]	; index key
+				integer? spec/key [pick-val data spec/key] ;[pick data spec/key]	; index key
 				paren?   spec/key [do-paren spec/key]	; expression to evaluate
 				path?    spec/key [get-path-key data spec/key]	; deep key
 				'else [									; simple key name

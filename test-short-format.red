@@ -177,32 +177,32 @@ tests: context [
 		])
 
 		; named fields in an block
-		"First^^: /first:<8| Last^^: /last:8| phone^^: /phoneX" [
+		"First^^: /first:<8| Last^^: /last:8| phone^^: /phoneX | /3" [
 			first: "Gregg" last: "Irwin" phone: #208.461.9999
 		]
 
 		; named paths in an block
-		"First^^: /name/first:<8| Last^^: /name/last:8| phone^^: /name/phoneX" [
+		"First^^: /name/first:<8| Last^^: /name/last:8| phone^^: /name/phoneX | /3" [
 			name: [first: "Gregg" last: "Irwin" phone: #208.461.9999]
 		]
 
 		; named fields in an object
-		"First^^: /first:<8| Last^^: /last:8| phone^^: /phoneX" (context [
+		"First^^: /first:<8| Last^^: /last:8| phone^^: /phoneX | /3" (context [
 			first: "Gregg" last: "Irwin" phone: #208.461.9999
 		])
 
 		; named paths in an object
-		"First^^: /name/first:<8| Last^^: /name/last:8| phone^^: /name/phoneX" (context [
+		"First^^: /name/first:<8| Last^^: /name/last:8| phone^^: /name/phoneX | /3" (context [
 			name: context [first: "Gregg" last: "Irwin" phone: #208.461.9999]
 		])
 
 		; named fields in a map
-		"First^^: /first:<8| Last^^: /last:8| phone^^: /phoneX" #(
+		"First^^: /first:<8| Last^^: /last:8| phone^^: /phoneX | /3" #(
 			first: "gregg" last: "irwin" phone: #208.461.0000
 		)
 
 		; named paths in a map. Nicer escapes
-		"First: /name/first:<8| Last: /name/last:8| phone: /name/phoneX" #(
+		"First: /name/first:<8| Last: /name/last:8| phone: /name/phoneX | /3" #(
 			name: #(first: "gregg" last: "irwin" phone: #208.461.0000)
 		)
 
