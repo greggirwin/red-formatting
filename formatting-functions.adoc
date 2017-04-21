@@ -148,6 +148,95 @@ into the tiny details. To this end, we won't have a single dialect
 that covers all our needs, even if there ends up being a single
 `format` function that is an entry point.
 
+== Values
+
+We should leverage types for all they're worth. While it will be nice of
+us to support formatting float! as percent!, or as money! (AHHH!), we
+really need to tell people to use appropriate datatypes.
+
+Being able to access values, when formatting more than a single value at
+at time, including structured values, is convenient. The ability to do
+this has to be balanced against complexity and risk (security).
+
+== Interpolation
+
+In addition to interpolating values in strings, as other languages do,
+we should be able to interpolate formatted values into blocks. 
+
+== Masks versus specifications
+
+Formatting via masks has a rich history. "#,##0.00" tells you what it's
+going to look like, at least roughly. It's a WYSIWYG model. You can tell
+it will have 2 decimal places, at least one leading zero, and use the 
+comma as a group separator. There are subtleties of course. ".00" may 
+mean "at least", "at most", or "exactly" 2 digits. If you figure out that
+"#" means an optional digit, you can guess ".00" doesn't mean "at most".
+It still doesn't tell you which of the other two it is. 
+
+Specifications, as used in `printf`, give you 2 widths. e.g., %5.2f. You
+might think that's clearer, but it's not. Is 5 the total width, or the
+number of whole digits? The min/max/exact question is the same.
+
+To know the behavior, you need to read the docs. Even then, formatting
+behavior isn't always clear. Once you take into account sign options,
+alignment, group separators, and alternate fill characters.
+
+
+== Format Styles (Named formats)
+
+Long format masks don't work well in interpolated strings, and are a pain
+to type repeatedly. Terse, short-format specs aren't always immediately
+clear in what their output looks like. The strengths of one are the 
+weaknesses of the other. The solution I'm moving toward is "named styles".
+It's not a new concept, but the approach I've taken is more like using
+style sheets than trying to build in every style and locale combination.
+The library of them will naturally grow over time, and may become standard,
+especially in larger internationalized systems. The standard system should
+cover basic needs, and allow users to easily extend it.
+
+
+== Short Formats (ala `printf`)
+
+Short-formats are like `printf`, but not exactly the same. Don't compare
+the output to `printf` as a point of reference.
+
+NOTE: The exact behavior isn't nailed down on this yet. The current implementation
+      allows the deci point to float, based on value, precision, and alignment.
+      That's how printf seems to do it, at least some of them. It feels like
+      spec'ing a precision should make that part fixed.
+
+- Flags are "<>_+0Zz$¤º"
+  [left-align right-align space-for-+  +-for-+  zero-fill(0Zz) money($¤) ordinal]
+  0 is a bit confusing in some cases, because it could be the last flag char, but
+  then you may have leading 0s in the width, that follows. Have to decide if
+  it's worth keeping. `¤` is not a well-known character but is a universal currency
+  symbol, but `$` is most universal. If we want to use something that is replaceable,
+  for localization, and clearly not USD, `¤` makes sense. Otherwise `$` seems best.
+  `£` and `€` are the next most common characters to consider, but suffer the same
+  specificity problem as `$`. Rebol supports 3-letter ISO4217 codes on money! vals.
+  See: https://en.wikipedia.org/wiki/Currency_sign_(typography)
+
+- Width+precision are [m][.n] 
+
+The sigil is the hardest thing to choose. `%` is for files in Red. I like `:`,
+since it is like `get-word!` syntax, implying that we're getting a value to
+interpolate into a string. If we also end the format with it, it's a get-set op,
+implying getting a value and applying the format to it. The other big question
+is whether short-format strings need to be structured. e.g. :[...]: or :(...):.
+I think those apply to string interpolation, not single value short format
+applications.
+
+The biggest downside to `:` as a sigil is time values.
+
+Alt sigil ideas: _=&@! But I don't really care for any of them.
+
+I don't like ~ or ` as sigil options either.
+
+Escaping the sigil with the standard escape character isn't beautiful either
+(`^^:`), but I don't want to double characters as an escape mechanism when
+we already have a known escape pattern.
+
+
 == Contexts and Functions
 
 _**There are some long and some terrible names in place. Known and sometimes intentional.**_
@@ -275,40 +364,81 @@ Composite/err-val input "#ERR"
 
 > Return the ordinal suffix for a number (th, st, nd, rd, etc.)
 
+Examples:
+....
+....
+
 === as-ordinal
 
 > Return the ordinal string for a number (1st, 2nd, 3rd, etc.)
+
+Examples:
+....
+....
 
 === format-bytes
 
 > Return a string containing the size and units, auto-scaled by default
 
+Examples:
+....
+....
+
 === format-logic
 
 > Format a logic value as a string, custom or named format
+
+Examples:
+....
+....
+
 === form-num-with-group-seps
 
 > Insert group separators into a numeric string
+
+Examples:
+....
+....
 
 === format-by-width
 
 > Formats a number given a total length and a maximum number of decimal digits. No separators added.
 
+Examples:
+....
+....
+
 === format-number-with-mask
 
 > Return a formatted number, using a mask as a template
+
+Examples:
+....
+....
 
 === format-number-via-masks
 
 > Format, selecting the mask based on the number's value
 
+Examples:
+....
+....
+
 === format-number-with-style
 
 > Return a formatted number, by named style
 
+Examples:
+....
+....
+
 === short-form
 
 > Format and substitute values into a template string
+
+Examples:
+....
+....
 
 === block-form
 
@@ -318,81 +448,10 @@ Composite/err-val input "#ERR"
 
 > General formatting entry point (TBD)
 
-
-== Values
-
-We should leverage types for all they're worth. While it will be nice of
-us to support formatting float! as percent!, or as money! (AHHH!), we
-really need to tell people to use appropriate datatypes.
-
-Being able to access values, when formatting more than a single value at
-at time, including structured values, is convenient. The ability to do
-this has to be balanced against complexity and risk (security).
-
-
-== Interpolation
-
-== Format Styles (Named formats)
-
-Long format masks don't work well in interpolated strings, and are a pain
-to type repeatedly. Terse, short-format specs aren't always immediately
-clear in what their output looks like. The strengths of one are the 
-weaknesses of the other. The solution I'm moving toward is "named styles".
-It's not a new concept, but the approach I've taken is more like using
-style sheets than trying to build in every style and locale combination.
-The library of them will naturally grow over time, and may become standard,
-especially in larger internationalized systems. The standard system should
-cover basic needs, and allow users to easily extend it.
-
-
-== Masks
-
-    "#,##0.00"
+Examples:
 ....
-    <preformatted table data here>
-    colA    ColB
-    
-    Row1A   Row1B
 ....
 
-== Short Formats (ala `printf`)
 
-Short-formats are like `printf`, but not exactly the same. Don't compare
-the output to `printf` as a point of reference.
 
-NOTE: The exact behavior isn't nailed down on this yet. The current implementation
-      allows the deci point to float, based on value, precision, and alignment.
-      That's how printf seems to do it, at least some of them. It feels like
-      spec'ing a precision should make that part fixed.
-
-- Flags are "<>_+0Zz$¤º"
-  [left-align right-align space-for-+  +-for-+  zero-fill(0Zz) money($¤) ordinal]
-  0 is a bit confusing in some cases, because it could be the last flag char, but
-  then you may have leading 0s in the width, that follows. Have to decide if
-  it's worth keeping. `¤` is not a well-known character but is a universal currency
-  symbol, but `$` is most universal. If we want to use something that is replaceable,
-  for localization, and clearly not USD, `¤` makes sense. Otherwise `$` seems best.
-  `£` and `€` are the next most common characters to consider, but suffer the same
-  specificity problem as `$`. Rebol supports 3-letter ISO4217 codes on money! vals.
-  See: https://en.wikipedia.org/wiki/Currency_sign_(typography)
-
-- Width+precision are [m][.n] 
-
-The sigil is the hardest thing to choose. `%` is for files in Red. I like `:`,
-since it is like `get-word!` syntax, implying that we're getting a value to
-interpolate into a string. If we also end the format with it, it's a get-set op,
-implying getting a value and applying the format to it. The other big question
-is whether short-format strings need to be structured. e.g. :[...]: or :(...):.
-I think those apply to string interpolation, not single value short format
-applications.
-
-The biggest downside to `:` as a sigil is time values.
-
-Alt sigil ideas: _=&@! But I don't really care for any of them.
-
-I don't like ~ or ` as sigil options either.
-
-Escaping the sigil with the standard escape character isn't beautiful either
-(`^^:`), but I don't want to double characters as an escape mechanism when
-we already have a known escape pattern.
 
