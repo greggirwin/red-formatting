@@ -917,6 +917,29 @@ People may confuse themselves, and I am people.
 
 Formats follow the basic idea from `printf`, but do not share its exact syntax.
 
+* `:[flags][width][.precision]['style]`
+* `:[flags]['style]`
+
+That is, 0 or more flags, followed by an optional width and precision, with a
+style name option as well. Style design isn't fully in place yet, but it may
+either be an override for the other options, or the other options may merge into
+the style. For example, you could use the 'accounting style, but override the
+size.
+
+Flags:
+....
+    Char    Meaning
+
+    _
+    +       Show + instead of space for positive number's sign
+    0       Set fill char to 0 instead of space. (Can't be first flag char)
+    <       Left align
+    >       Right align (default)
+    Zz      Set fill char to 0 instead of space. (May remove 0 flag. This is better.)
+    º       Ordinal (just an idea)
+    $¤      Money
+    
+....
 
 
 Spec:
@@ -927,6 +950,134 @@ Spec:
 
 Examples:
 ....
+apply-test
+    INPUT:  "test"
+    VALUE:  123.456
+    OUTPUT: "test"
+apply-test
+    INPUT:  ":20.10"
+    VALUE:  123.456
+    OUTPUT: "             123.456"
+apply-test
+    INPUT:  ":<10"
+    VALUE:  123.456
+    OUTPUT: "123.456   "
+apply-test
+    INPUT:  ":>10"
+    VALUE:  123.456
+    OUTPUT: "   123.456"
+apply-test
+    INPUT:  ":07.1"
+    VALUE:  123.456
+    OUTPUT: "00123.5"
+apply-test
+    INPUT:  ":00.1"
+    VALUE:  123.456
+    OUTPUT: "123.5"
+apply-test
+    INPUT:  ":015.4"
+    VALUE:  123.456789
+    OUTPUT: "0000000123.4568"
+apply-test
+    INPUT:  ":Z0.1"
+    VALUE:  123.456
+    OUTPUT: "123.5"
+apply-test
+    INPUT:  ":5.1"
+    VALUE:  123.456%
+    OUTPUT: "123.5%"
+apply-test
+    INPUT:  ":5.2"
+    VALUE:  123.456%
+    OUTPUT: "123.46%"
+apply-test
+    INPUT:  ":10.3"
+    VALUE:  123.456%
+    OUTPUT: "  123.456%"
+apply-test
+    INPUT:  ":10.4 :8.2 :5.0"
+    VALUE:  -123.456%
+    OUTPUT: "- 123.456% -123.46% -123%"
+apply-test
+    INPUT:  ":º"
+    VALUE:  1
+    OUTPUT: "1st"
+apply-test
+    INPUT:  ":º"
+    VALUE:  15
+    OUTPUT: "15th"
+apply-test
+    INPUT:  ":º"
+    VALUE:  123
+    OUTPUT: "123rd"
+apply-test
+    INPUT:  ":$"
+    VALUE:  123
+    OUTPUT: "$123.00"
+apply-test
+    INPUT:  ":¤"
+    VALUE:  123
+    OUTPUT: "$123.00"
+apply-test
+    INPUT:  ":/pi"
+    VALUE:  123.456
+    OUTPUT: "123.4563.141592653589793"
+apply-test
+    INPUT:  "/system/words/pi"
+    VALUE:  123.456
+    OUTPUT: "3.141592653589793"
+apply-test
+    INPUT:  "/now/time"
+    VALUE:  123.456
+    OUTPUT: "1:04:53"
+apply-test
+    INPUT:  "/(1 + 1)"
+    VALUE:  123.456
+    OUTPUT: "2"
+apply-test
+    INPUT:  {Color :<10, number1 :3, number2 :05, float :<5.2.\n}
+    VALUE:  ["Red" 2 3 -45.6]
+    OUTPUT: {Color Red       , number1 Red, number2 00Red, float Red  .\n}
+apply-test
+    INPUT:  "Color: :<10, number1/ :3, http://:2, float: :<5.2"
+    VALUE:  ["Red" 3 8080 -45.6]
+    OUTPUT: {Color: Red       , number1/ Red, http://Red, float: Red  }
+apply-test
+    INPUT:  {Color :'general | idx3 /3:'money | num2 /N2:<'general | pi /system/words/pi:<'fixed | /(1 + 1) /now/time}
+    VALUE:  [ "Red" n2 2 3 n4 -45.6 ]
+    OUTPUT: {Color TBD: apply-format-style for non-number | idx3 $2.00 | num2 2 | pi 3.14 | 2 1:04:53}
+apply-test
+    INPUT:  {Color :<5| idx3 /3:Z3| num2 /N2:<5| pi /system/words/pi:<5.2| /(1 + 1) /now/time}
+    VALUE:  [ "Red" n2 2 3 n4 -45.6 ]
+    OUTPUT: {Color Red  | idx3 002| num2 2    | pi 3.14 | 2 1:04:53}
+apply-test
+    INPUT:  {Color :<5| idx3 /3:Z3| num2 /N2:<5| pi /system/words/pi:<5.2| /(1 + 1):z3 |/now/time/precise:10|/fn}
+    VALUE:  [ "Red" n2 2 3 n4 -45.6 fn func [][42] ]
+    OUTPUT: {Color Red  | idx3 002| num2 2    | pi 3.14 | 002 |1:04:53.072|42}
+apply-test
+    INPUT:  {First: /first:<8| Last: /last:8| phone: /phoneX | /3}
+    VALUE:  [ first: "Gregg" last: "Irwin" phone: #208.461.9999 ]
+    OUTPUT: "First: Gregg   | Last:    Irwin| phone:  | last"
+apply-test
+    INPUT:  {First: /name/first:<8| Last: /name/last:8| phone: /name/phoneX | /3}
+    VALUE:  [ name: [first: "Gregg" last: "Irwin" phone: #208.461.9999] ]
+    OUTPUT: "First: Gregg   | Last:    Irwin| phone:  | "
+apply-test
+    INPUT:  {First: /first:<8| Last: /last:8| phone: /phoneX | /3}
+    VALUE:  make object! [ first: "Gregg" last: "Irwin" phone: #208.461.9999 ]
+    OUTPUT: {First: Gregg   | Last:    Irwin| phone:  | 208.461.9999}
+apply-test
+    INPUT:  {First: /name/first:<8| Last: /name/last:8| phone: /name/phoneX | /3}
+    VALUE:  make object! [ name: make object! [ first: "Gregg" last: "Irwin" phone: #208.461.9999 ] ]
+    OUTPUT: {First: Gregg   | Last:    Irwin| phone: *** Script Error: name has no value^/*** Where: get | }
+apply-test
+    INPUT:  {First: /first:<8| Last: /last:8| phone: /phoneX | /3}
+    VALUE:  #( first: "gregg" last: "irwin" phone: #208.461.0000 )
+    OUTPUT: {First: gregg   | Last:    irwin| phone:  | 208.461.0000}
+apply-test
+    INPUT:  {First: /name/first:<8| Last: /name/last:8| phone: /name/phoneX | /3}
+    VALUE:  #( name: #( first: "gregg" last: "irwin" phone: #208.461.0000 ) )
+    OUTPUT: "First: gregg   | Last:    irwin| phone:  | "
 ....
 
 == block-form
@@ -935,9 +1086,137 @@ Examples:
 
 Spec:
 ....
+    input [block!] "Template block containing `(/value:format)` fields and literal data"
+    data "Value(s) to apply to template fields"
 ....
 
-== format
+Everything about short-format applies here, except that the input is a block,
+and fields don't start with a `/` sigil. Instead, paren! values are used for
+fields, and the format inside them based on Red values, not string parsing.
+HOWEVER, an option would be to use tag! values and apply exactl the same 
+format as used in short-format. We could also support both, but that gives
+you two datatypes that are escaped as formatting fields in your block.
+
+The order is still `(key flags width prec style)`] and the types supported 
+are `([refinement! | path! | paren!] get-word! integer! integer! word!)`.
+The only special handling is that refinements are coerced to integer! or
+word! values and flags are coerced to a string.
+
+
+Examples:
+....
+apply-test
+    INPUT:  [(:< 10)]
+    VALUE:  123.456
+    OUTPUT: "123.456   "
+apply-test
+    INPUT:  [(10)]
+    VALUE:  123.456
+    OUTPUT: "   123.456"
+apply-test
+    INPUT:  [(:Z 7 1)]
+    VALUE:  123.456
+    OUTPUT: "00123.5"
+apply-test
+    INPUT:  [(:Z 15 4)]
+    VALUE:  123.456789
+    OUTPUT: "0000000123.4568"
+apply-test
+    INPUT:  [(:Z 15 4)]
+    VALUE:  -123.456789
+    OUTPUT: "-000000123.4568"
+apply-test
+    INPUT:  [(5 1)]
+    VALUE:  123.456%
+    OUTPUT: "123.5%"
+apply-test
+    INPUT:  [(5 2)]
+    VALUE:  123.456%
+    OUTPUT: "123.46%"
+apply-test
+    INPUT:  [(10 3)]
+    VALUE:  123.456%
+    OUTPUT: "  123.456%"
+apply-test
+    INPUT:  [(10 4)]
+    VALUE:  -123.456%
+    OUTPUT: "- 123.456%"
+apply-test
+    INPUT:  [(10 4) " | " (8 2) " | " (5 0)]
+    VALUE:  -123.456%
+    OUTPUT: {- 123.456% " | " -123.46% " | " -123%}
+apply-test
+    INPUT:  [(:Z 8 2)]
+    VALUE:  -10.5
+    OUTPUT: "-00010.5"
+apply-test
+    INPUT:  [(:º)]
+    VALUE:  1
+    OUTPUT: "1st"
+apply-test
+    INPUT:  [(:º)]
+    VALUE:  15
+    OUTPUT: "15th"
+apply-test
+    INPUT:  [(:º)]
+    VALUE:  123
+    OUTPUT: "123rd"
+apply-test
+    INPUT:  [(/pi)]
+    VALUE:  123.456
+    OUTPUT: "3.141592653589793"
+apply-test
+    INPUT:  [(system/words/pi)]
+    VALUE:  123.456
+    OUTPUT: "3.141592653589793"
+apply-test
+    INPUT:  [((1 + 1))]
+    VALUE:  123.456
+    OUTPUT: "2"
+apply-test
+    INPUT:  [Color: (:< 10) number1 (/3) number2 () xxx]
+    VALUE:  ["Red" 2 3 -45.6]
+    OUTPUT: "Color: Red        number1 3 number2 Red xxx"
+apply-test
+    INPUT:  [Color (col-1) | idx3 (/3 acct) | num2 (/N2 :< general) | pi (system/words/pi :< fixed) | ((1 + 1)) (now/time)]
+    VALUE:  ["Red" n2 2 3 n4 -45.6]
+    OUTPUT: {Color <TBD: apply-format-style for non-number> | idx3 <Unknown style: acct> | num2 2 | pi 3.14 | 2 1:24:43}
+apply-test
+    INPUT:  [Color (:<5) | idx3 (/3 :Z3) | num2 (/N2 :<5) | pi (system/words/pi :< 5 2) | ((1 + 1)) (now/time)]
+    VALUE:  ["Red" n2 2 3 n4 -45.6]
+    OUTPUT: {Color Red | idx3 2 | num2 2 | pi 3.14  | 2 1:24:43}
+apply-test
+    INPUT:  [Color (:<5) | idx3 (/3 :Z3) | num2 (/N2 :<5) | pi (system/words/pi :<5 2) | ((1 + 1)) (:z3) | (now/time/precise 10) | (/fn)]
+    VALUE:  [ "Red" n2 2 3 n4 -45.6 fn func [][42] ]
+    OUTPUT: {Color Red | idx3 2 | num2 2 | pi 3.141592653589793 | 2 Red | 1:24:43.246 | 42}
+apply-test
+    INPUT:  [First: (/first :< 8) | Last: (/last 8) | phone: (/phoneX)]
+    VALUE:  [first: "Gregg" last: "Irwin" phone: #208.461.9999]
+    OUTPUT: "First: Gregg    | Last:    Irwin | phone: "
+apply-test
+    INPUT:  [First: (name/first :< 8) | Last: (name/last 8) | phone: (name/phoneX)]
+    VALUE:  [name: [first: "Gregg" last: "Irwin" phone: #208.461.9999]]
+    OUTPUT: "First: Gregg    | Last:    Irwin | phone: "
+apply-test
+    INPUT:  [First: (/first :< 8) | Last: (/last 8) | phone: (/phoneX)]
+    VALUE:  make object! [ first: "Gregg" last: "Irwin" phone: #208.461.9999 ]
+    OUTPUT: "First: Gregg    | Last:    Irwin | phone: "
+apply-test
+    INPUT:  [First: (name/first :< 8) | Last: (name/last 8) | phone: (name/phoneX)]
+    VALUE:  make object! [ name: make object! [ first: "Gregg" last: "Irwin" phone: #208.461.9999 ] ]
+    OUTPUT: {First: Gregg    | Last:    Irwin | phone: *** Script Error: path name/phoneX is not valid for word! type^/*** Where: get}
+apply-test
+    INPUT:  [First: (/first :< 8) | Last: (/last 8) | phone: (/phoneX)]
+    VALUE:  #( first: "gregg" last: "irwin" phone: #208.461.0000 )
+    OUTPUT: "First: gregg    | Last:    irwin | phone: "
+apply-test
+    INPUT:  [First: (name/first :< 8) | Last: (name/last 8) | phone: (name/phoneX)]
+    VALUE:  #( name: #( first: "gregg" last: "irwin" phone: #208.461.0000 ) )
+    OUTPUT: "First: gregg    | Last:    irwin | phone: "
+....
+
+
+== format (TBD)
 
 > General formatting entry point (TBD)
 
