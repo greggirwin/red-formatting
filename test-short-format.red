@@ -136,6 +136,9 @@ tests: context [
 		":º" 15
 		":º" 123
 
+		":$" 123
+		":¤" 123
+
 		":/5"  123.456
 		":/pi" 123.456
 		":/a"  123.456
@@ -164,7 +167,7 @@ tests: context [
 		; "Color @<10, number1 @3, number2 @05, float @<5.2.\n" ["Red" 2 3 -45.6]
 		; "Color !<10, number1 !3, number2 !05, float !<5.2.\n" ["Red" 2 3 -45.6]
 
-		"Color :'col-1| idx3 /3:'acct| num2 /N2:<'general| pi /system/words/pi:<'fixed| /(1 + 1) /now/time" [
+		"Color :'general | idx3 /3:'money | num2 /N2:<'general | pi /system/words/pi:<'fixed | /(1 + 1) /now/time" [
 			"Red" n2 2 3 n4 -45.6
 		]
 		
@@ -177,27 +180,27 @@ tests: context [
 		])
 
 		; named fields in an block
-		"First^^: /first:<8| Last^^: /last:8| phone^^: /phoneX | /3" [
+		"First: /first:<8| Last: /last:8| phone: /phoneX | /3" [
 			first: "Gregg" last: "Irwin" phone: #208.461.9999
 		]
 
 		; named paths in an block
-		"First^^: /name/first:<8| Last^^: /name/last:8| phone^^: /name/phoneX | /3" [
+		"First: /name/first:<8| Last: /name/last:8| phone: /name/phoneX | /3" [
 			name: [first: "Gregg" last: "Irwin" phone: #208.461.9999]
 		]
 
 		; named fields in an object
-		"First^^: /first:<8| Last^^: /last:8| phone^^: /phoneX | /3" (context [
+		"First: /first:<8| Last: /last:8| phone: /phoneX | /3" (context [
 			first: "Gregg" last: "Irwin" phone: #208.461.9999
 		])
 
 		; named paths in an object
-		"First^^: /name/first:<8| Last^^: /name/last:8| phone^^: /name/phoneX | /3" (context [
+		"First: /name/first:<8| Last: /name/last:8| phone: /name/phoneX | /3" (context [
 			name: context [first: "Gregg" last: "Irwin" phone: #208.461.9999]
 		])
 
 		; named fields in a map
-		"First^^: /first:<8| Last^^: /last:8| phone^^: /phoneX | /3" #(
+		"First: /first:<8| Last: /last:8| phone: /phoneX | /3" #(
 			first: "gregg" last: "irwin" phone: #208.461.0000
 		)
 
