@@ -1,5 +1,8 @@
 ﻿Red []
 
+short-format-ctx: none
+do %format.red
+
 short-format-ctx: context [
 
 	; I've never liked the name of this func, but I'm including it here
@@ -45,7 +48,7 @@ short-format-ctx: context [
 	sty-sigil=: #"'"
 	sigil=: [key-sigil= | fmt-sigil=]
 		;| "^^" [#":" (append =parts ":") | "/" (append =parts "/")]
-	esc-sigil=: [
+	esc=: [
 		[copy =esc [": " | "://" | "/ "] | "^^" copy =esc [":" | "/"]]
 		(append =parts =esc)
 	]
@@ -96,7 +99,7 @@ short-format-ctx: context [
 		)
 		any [
 			end break
-			| esc-sigil=
+			| esc=
 			| field=
 			| plain=
 		]
@@ -173,7 +176,14 @@ short-format-ctx: context [
 	;---------------------------------------------------------------------------
 	;-- Public
 	
-	apply-format-style: func [v style][mold :v]	; TBD
+	apply-format-style: func [v style][
+		;print ['apply-format-style v style]
+		either number? v [
+			format-number-with-style :v style
+		][
+			"TBD: apply-format-style for non-number"
+		]
+	]
 	
 	set 'apply-short-format function [
 		"Apply a format spec to a single value"
