@@ -250,10 +250,10 @@ formatting: context [
 	]
 
 	set 'form-num-ex function [
-		"Extended FORM for numbers"
+		"Extended FORM for numbers, lets you control E notation and rounding"
 		n [number!]
 		/type t [word! function!] "[gen sci eng acct] Default is gen, or custom exponent function"
-		/to scale [number!] "Non-zero rounding scale"
+		/to scale [number!] "Rounding scale (must be positive)"
 	][
 		if n = 0 [return "0"]	; zero? is broken for floats right now
 		if all [scale  scale > 0][

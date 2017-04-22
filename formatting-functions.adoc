@@ -269,6 +269,7 @@ respectively.
     format-bytes             Major  Return a string containing the size and units, auto-scaled by default
     format-logic             Major  Format a logic value as a string, custom or named format
     form-num-with-group-seps Minor  Insert group separators into a numeric string
+    form-num-ex              Major  Extended FORM for numbers, lets you control E notation and rounding
     format-by-width          Minor  Formats a number given a total length and a maximum number of decimal digits. No separators added.
     format-number-with-mask  Minor  Return a formatted number, using a mask as a template
     format-number-via-masks  Minor  Format, selecting the mask based on the number's value
@@ -515,6 +516,24 @@ Examples:
 >> form-num-with-group-seps/with/every 1234567.89 #"'" 2
 == "1'23'45'67.89"
 ....
+
+
+== form-num-ex
+
+> Extended FORM for numbers, lets you control E notation and rounding
+
+
+Spec:
+....
+    n [number!]
+    /type t [word! function!] "[gen sci eng acct] Default is gen, or custom exponent function"
+    /to scale [number!] "Rounding scale (must be positive)"
+....
+
+Examples:
+....
+....
+
 
 == format-by-width
 
