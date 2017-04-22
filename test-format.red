@@ -284,7 +284,138 @@ with formatting [
 			format-number-by-width/right/use+ 123.456 10 2
 			
 		]
+		form-num-ex [
+			form-num-ex/type 0 'gen
+			form-num-ex/type -0 'gen
+			form-num-ex/type 0.45 'gen
+			form-num-ex/type 1.45 'gen
+			form-num-ex/type 12.45 'gen
+			form-num-ex/type 123.45 'gen
+			form-num-ex/type 1234.0 'gen
+			form-num-ex/type 12345.0 'gen
+			form-num-ex/type 123450.0 'gen
+			form-num-ex/type 1234500.0 'gen
+			form-num-ex/type 12345000.0 'gen
+			form-num-ex/type 123'450'000.0 'gen
+			form-num-ex/type 1'234'500'000.0 'gen
+			form-num-ex/type -1'234'500'000.0 'gen
+			form-num-ex/type -0.000'000'123'45 'gen
+			form-num-ex/type 0.000'000'123'45 'gen
+			form-num-ex/type 0.00'000'123'45 'gen
+			form-num-ex/type 0.0'000'123'45 'gen
+			form-num-ex/type 0.000'123'45 'gen
+			form-num-ex/type 0.0012345 'gen
+			form-num-ex/type 0.012345 'gen
+			form-num-ex/type 0.12345 'gen
+			form-num-ex/type 0.2345 'gen
+			form-num-ex/type 0.345 'gen
+			form-num-ex/type 0.45 'gen
+			form-num-ex/type 0.5 'gen
+			form-num-ex/type 1e16 'gen
+			form-num-ex/type 1e-5 'gen
+			form-num-ex/type 123.45% 'gen
+			form-num-ex/type/to 123.45% 'gen 10%
+			form-num-ex/type/to 123.45% 'gen 1%
+			form-num-ex/type/to 123.45% 'gen .1
 
+			form-num-ex/type 0 'eng
+			form-num-ex/type -0 'eng
+			form-num-ex/type 0.45 'eng
+			form-num-ex/type 1.45 'eng
+			form-num-ex/type 12.45 'eng
+			form-num-ex/type 123.45 'eng
+			form-num-ex/type 1234.0 'eng
+			form-num-ex/type 12345.0 'eng
+			form-num-ex/type 123450.0 'eng
+			form-num-ex/type 1234500.0 'eng
+			form-num-ex/type 12345000.0 'eng
+			form-num-ex/type 123'450'000.0 'eng
+			form-num-ex/type 1'234'500'000.0 'eng
+			form-num-ex/type -1'234'500'000.0 'eng
+			form-num-ex/type -0.000'000'123'45 'eng
+			form-num-ex/type 0.000'000'123'45 'eng
+			form-num-ex/type 0.00'000'123'45 'eng
+			form-num-ex/type 0.0'000'123'45 'eng
+			form-num-ex/type 0.000'123'45 'eng
+			form-num-ex/type 0.0012345 'eng
+			form-num-ex/type 0.012345 'eng
+			form-num-ex/type 0.12345 'eng
+			form-num-ex/type 0.2345 'eng
+			form-num-ex/type 0.345 'eng
+			form-num-ex/type 0.45 'eng
+			form-num-ex/type 0.5 'eng
+			form-num-ex/type 1e16 'eng
+			form-num-ex/type 1e-5 'eng
+
+			form-num-ex/type 0 'sci
+			form-num-ex/type -0 'sci
+			form-num-ex/type 0.45 'sci
+			form-num-ex/type 1.45 'sci
+			form-num-ex/type 12.45 'sci
+			form-num-ex/type 123.45 'sci
+			form-num-ex/type 1234.0 'sci
+			form-num-ex/type 12345.0 'sci
+			form-num-ex/type 123450.0 'sci
+			form-num-ex/type 1234500.0 'sci
+			form-num-ex/type 12345000.0 'sci
+			form-num-ex/type 123'450'000.0 'sci
+			form-num-ex/type 1'234'500'000.0 'sci
+			form-num-ex/type -1'234'500'000.0 'sci
+			form-num-ex/type -0.000'000'123'45 'sci
+			form-num-ex/type 0.000'000'123'45 'sci
+			form-num-ex/type 0.00'000'123'45 'sci
+			form-num-ex/type 0.0'000'123'45 'sci
+			form-num-ex/type 0.000'123'45 'sci
+			form-num-ex/type 0.0012345 'sci
+			form-num-ex/type 0.012345 'sci
+			form-num-ex/type 0.12345 'sci
+			form-num-ex/type 0.2345 'sci
+			form-num-ex/type 0.345 'sci
+			form-num-ex/type 0.45 'sci
+			form-num-ex/type 0.5 'sci
+			form-num-ex/type 1e16 'sci
+			form-num-ex/type 1e-5 'sci
+
+			form-num-ex/type 0 'acct
+			form-num-ex/type -0 'acct
+			form-num-ex/type 0.45 'acct
+			form-num-ex/type 1.45 'acct
+			form-num-ex/type 12.45 'acct
+			form-num-ex/type 123.45 'acct
+			form-num-ex/type 1234.0 'acct
+			form-num-ex/type 12345.0 'acct
+			form-num-ex/type 123450.0 'acct
+			form-num-ex/type 1234500.0 'acct
+			form-num-ex/type 12345000.0 'acct
+			form-num-ex/type 123'450'000.0 'acct
+			form-num-ex/type 1'234'500'000.0 'acct
+			form-num-ex/type -1'234'500'000.0 'acct
+			form-num-ex/type -0.000'000'123'45 'acct
+			form-num-ex/type 0.000'000'123'45 'acct
+			form-num-ex/type 0.00'000'123'45 'acct
+			form-num-ex/type 0.0'000'123'45 'acct
+			form-num-ex/type 0.000'123'45 'acct
+			form-num-ex/type 0.0012345 'acct
+			form-num-ex/type 0.012345 'acct
+			form-num-ex/type 0.12345 'acct
+			form-num-ex/type 0.2345 'acct
+			form-num-ex/type 0.345 'acct
+			form-num-ex/type 0.45 'acct
+			form-num-ex/type 0.5 'acct
+			form-num-ex/type 1e16 'acct		; limit of std notation
+			form-num-ex/type 1e-14 'acct	; lower limit of precision
+			form-num-ex/type 123.45% 'acct
+			form-num-ex/type/to 123.45% 'acct 10%
+			form-num-ex/type/to 123.45% 'acct 1%
+			form-num-ex/type/to 123.45% 'acct .1
+			
+			form-num-ex/type 1234.5678 			:cust-exp-fn
+			form-num-ex/type 124123234.5678 	:cust-exp-fn
+			form-num-ex/type 14123234.5678 		:cust-exp-fn
+			form-num-ex/type 0.0000000123456789 :cust-exp-fn    
+			form-num-ex/type 0.000000123456789 	:cust-exp-fn
+			
+		]
 	]
 	print mold reduce tests/join
 	print mold reduce tests/form-num-with-group-seps
@@ -294,7 +425,9 @@ with formatting [
 	print mold reduce tests/merge-number-mask
 	print mold reduce tests/format-number-with-style
 	print mold reduce tests/format-number-by-width
-	;print mold reduce tests/
+	cust-exp-fn: formatting/make-custom-exp-fn [either any [n < -7  n > 7][n][none]]
+	cust-exp-fn: func [n [integer!] "Exponent"][either any [n < -7  n > 7][n][none]]
+	print mold reduce tests/form-num-ex
 	;print mold reduce tests/
 	;print mold reduce tests/
 

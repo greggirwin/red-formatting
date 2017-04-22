@@ -187,7 +187,273 @@ formatting: context [
 	]
 	
 	;---------------------------------------------------------------------------
+	; Inspired by how Wolfram works
+	
+	; TBD: Think about whether to allow custom exponent-functions
+;	exponent-function: function [
+;		type [word!] "[gen sci eng acct]"
+;	][
+;		; TBD: Don't generate these dynamically, for performance
+;		func [n [integer!] "Exponent"] switch type [
+;			gen  [[either any [n < -4  n > 15][n][none]]]	; Use E if <= 1e-5 or >= 1e16
+;			sci  [[either n = 0 [none][n]]]					; E for values >= 10
+;			eng  [[round/to n - 1 3]]						; Use E that is a multiple of 3, scaled for 1-3 digits to left of decimal
+;			acct [[none]]									; Never use E notation
+;		]
+;	]
+	_exp-fn-gen:  func [n [integer!] "Exponent"][either any [n < -4  n > 15][n][none]]	; Use E if <= 1e-5 or >= 1e16
+	_exp-fn-sci:  func [n [integer!] "Exponent"][either n = 0 [none][n]]                ; E for values >= 10
+	_exp-fn-eng:  func [n [integer!] "Exponent"][round/to n - 1 3]                      ; Use E that is a multiple of 3, scaled for 1-3 digits to left of decimal
+	_exp-fn-acct: func [n [integer!] "Exponent"][none]                                  ; Never use E notation
+	;_exp-fn-: func [n [integer!] "Exponent"][]
+	; If the result of an exponent-function is an integer, it should be used
+	; as the exponent of a number. If it's none, the number should be shown
+	; without scientific notation.
+	make-custom-exp-fn: func [body [block!]][
+		func [n [integer!] "Exponent"] body
+	]
+	exponent-function: function [
+		type [word! function!] "[gen sci eng acct] or custom func"
+	][
+		either function? :type [:type][
+			switch type [
+				gen  [:_exp-fn-gen]		; Use E if <= 1e-5 or >= 1e16
+				sci  [:_exp-fn-sci]		; E for values >= 10
+				eng  [:_exp-fn-eng]		; Use E that is a multiple of 3, scaled for 1-3 whole digits
+				acct [:_exp-fn-acct]	; Never use E notation
+			]
+		]
+	]
+	
+	; If the result of an exponent-function is an integer, it should be used
+	; as the exponent of a number. If it's none, the number should be shown
+	; without scientific notation.
+	find-E-to-use: function [
+		e    [integer!] "Exponent"
+		type [word! function!] "[gen sci eng acct] or custom exponent function"
+	][
+		fn: exponent-function :type
+		fn e
+	]
+	
+	; Return Exponent that makes exactly one digit appear to the left of the
+	; decimal point.
+	one-digit-E: function [n [number!] return: [integer!]][
+		;!! Very important to round before integer conversion here or 
+		;	it will just truncate. And log-10 returns 1.#NaN for 
+		;	negatives, which is why absolute is used.
+		to integer! round log-10 absolute n
+	]
+	
+	use-E-notation?: func [n [number!] type [word! function!]][
+		not none? find-E-to-use n :type
+	]
 
+	set 'form-num-ex function [
+		"Extended FORM for numbers"
+		n [number!]
+		/type t [word! function!] "[gen sci eng acct] Default is gen, or custom exponent function"
+		/to scale [number!] "Non-zero rounding scale"
+	][
+		if n = 0 [return "0"]	; zero? is broken for floats right now
+		if all [scale  scale > 0][
+			if all [percent? n float? scale] [scale: scale / 100.0]
+			n: round/to n scale
+		]
+		either e: find-E-to-use one-digit-E n any [:t 'gen] [
+			; Form using given exponent
+			rejoin [
+				divide (system/words/to float! n) 10.0 ** e				;!! 10.0, not int 10! Int will round at E=16
+				either all [e e <> 0] [join "e" e][""]
+			]
+		][
+			; Form with no E notation
+			;!! Trick FORM into giving us a non-scientific format. Currently, 
+			;   .1 is the lower limit where Red formats with E notation.
+			;	Though now I can't find how I determined that, as 0.0001 works.
+			either all [n > -0.1  n < .1  n <> 0  not percent? n][
+				; Add 1 to the absolute value of the number, to trick FORM.
+				num: form n + (1 * sign? n)
+				; Now our first digit is 1, but we added that, so change it to 0.
+				head change find num #"1" #"0"
+			][form n]
+		]
+	
+	]
+;	e.g. [
+;		form-num-ex/type 0 'gen
+;		form-num-ex/type -0 'gen
+;		form-num-ex/type 0.45 'gen
+;		form-num-ex/type 1.45 'gen
+;		form-num-ex/type 12.45 'gen
+;		form-num-ex/type 123.45 'gen
+;		form-num-ex/type 1234.0 'gen
+;		form-num-ex/type 12345.0 'gen
+;		form-num-ex/type 123450.0 'gen
+;		form-num-ex/type 1234500.0 'gen
+;		form-num-ex/type 12345000.0 'gen
+;		form-num-ex/type 123'450'000.0 'gen
+;		form-num-ex/type 1'234'500'000.0 'gen
+;		form-num-ex/type -1'234'500'000.0 'gen
+;		form-num-ex/type -0.000'000'123'45 'gen
+;		form-num-ex/type 0.000'000'123'45 'gen
+;		form-num-ex/type 0.00'000'123'45 'gen
+;		form-num-ex/type 0.0'000'123'45 'gen
+;		form-num-ex/type 0.000'123'45 'gen
+;		form-num-ex/type 0.0012345 'gen
+;		form-num-ex/type 0.012345 'gen
+;		form-num-ex/type 0.12345 'gen
+;		form-num-ex/type 0.2345 'gen
+;		form-num-ex/type 0.345 'gen
+;		form-num-ex/type 0.45 'gen
+;		form-num-ex/type 0.5 'gen
+;		form-num-ex/type 1e16 'gen
+;		form-num-ex/type 1e-5 'gen
+;		form-num-ex/type 123.45% 'gen
+;		form-num-ex/type/to 123.45% 'gen 10%
+;		form-num-ex/type/to 123.45% 'gen 1%
+;		form-num-ex/type/to 123.45% 'gen .1
+;
+;		form-num-ex/type 0 'eng
+;		form-num-ex/type -0 'eng
+;		form-num-ex/type 0.45 'eng
+;		form-num-ex/type 1.45 'eng
+;		form-num-ex/type 12.45 'eng
+;		form-num-ex/type 123.45 'eng
+;		form-num-ex/type 1234.0 'eng
+;		form-num-ex/type 12345.0 'eng
+;		form-num-ex/type 123450.0 'eng
+;		form-num-ex/type 1234500.0 'eng
+;		form-num-ex/type 12345000.0 'eng
+;		form-num-ex/type 123'450'000.0 'eng
+;		form-num-ex/type 1'234'500'000.0 'eng
+;		form-num-ex/type -1'234'500'000.0 'eng
+;		form-num-ex/type -0.000'000'123'45 'eng
+;		form-num-ex/type 0.000'000'123'45 'eng
+;		form-num-ex/type 0.00'000'123'45 'eng
+;		form-num-ex/type 0.0'000'123'45 'eng
+;		form-num-ex/type 0.000'123'45 'eng
+;		form-num-ex/type 0.0012345 'eng
+;		form-num-ex/type 0.012345 'eng
+;		form-num-ex/type 0.12345 'eng
+;		form-num-ex/type 0.2345 'eng
+;		form-num-ex/type 0.345 'eng
+;		form-num-ex/type 0.45 'eng
+;		form-num-ex/type 0.5 'eng
+;		form-num-ex/type 1e16 'eng
+;		form-num-ex/type 1e-5 'eng
+;
+;		form-num-ex/type 0 'sci
+;		form-num-ex/type -0 'sci
+;		form-num-ex/type 0.45 'sci
+;		form-num-ex/type 1.45 'sci
+;		form-num-ex/type 12.45 'sci
+;		form-num-ex/type 123.45 'sci
+;		form-num-ex/type 1234.0 'sci
+;		form-num-ex/type 12345.0 'sci
+;		form-num-ex/type 123450.0 'sci
+;		form-num-ex/type 1234500.0 'sci
+;		form-num-ex/type 12345000.0 'sci
+;		form-num-ex/type 123'450'000.0 'sci
+;		form-num-ex/type 1'234'500'000.0 'sci
+;		form-num-ex/type -1'234'500'000.0 'sci
+;		form-num-ex/type -0.000'000'123'45 'sci
+;		form-num-ex/type 0.000'000'123'45 'sci
+;		form-num-ex/type 0.00'000'123'45 'sci
+;		form-num-ex/type 0.0'000'123'45 'sci
+;		form-num-ex/type 0.000'123'45 'sci
+;		form-num-ex/type 0.0012345 'sci
+;		form-num-ex/type 0.012345 'sci
+;		form-num-ex/type 0.12345 'sci
+;		form-num-ex/type 0.2345 'sci
+;		form-num-ex/type 0.345 'sci
+;		form-num-ex/type 0.45 'sci
+;		form-num-ex/type 0.5 'sci
+;		form-num-ex/type 1e16 'sci
+;		form-num-ex/type 1e-5 'sci
+;
+;		form-num-ex/type 0 'acct
+;		form-num-ex/type -0 'acct
+;		form-num-ex/type 0.45 'acct
+;		form-num-ex/type 1.45 'acct
+;		form-num-ex/type 12.45 'acct
+;		form-num-ex/type 123.45 'acct
+;		form-num-ex/type 1234.0 'acct
+;		form-num-ex/type 12345.0 'acct
+;		form-num-ex/type 123450.0 'acct
+;		form-num-ex/type 1234500.0 'acct
+;		form-num-ex/type 12345000.0 'acct
+;		form-num-ex/type 123'450'000.0 'acct
+;		form-num-ex/type 1'234'500'000.0 'acct
+;		form-num-ex/type -1'234'500'000.0 'acct
+;		form-num-ex/type -0.000'000'123'45 'acct
+;		form-num-ex/type 0.000'000'123'45 'acct
+;		form-num-ex/type 0.00'000'123'45 'acct
+;		form-num-ex/type 0.0'000'123'45 'acct
+;		form-num-ex/type 0.000'123'45 'acct
+;		form-num-ex/type 0.0012345 'acct
+;		form-num-ex/type 0.012345 'acct
+;		form-num-ex/type 0.12345 'acct
+;		form-num-ex/type 0.2345 'acct
+;		form-num-ex/type 0.345 'acct
+;		form-num-ex/type 0.45 'acct
+;		form-num-ex/type 0.5 'acct
+;		form-num-ex/type 1e16 'acct		; limit of std notation
+;		form-num-ex/type 1e-14 'acct	; lower limit of precision
+;		form-num-ex/type 123.45% 'acct
+;		form-num-ex/type/to 123.45% 'acct 10%
+;		form-num-ex/type/to 123.45% 'acct 1%
+;		form-num-ex/type/to 123.45% 'acct .1
+
+;		form-num-ex/type 1234.5678 func [n [integer!] "Exponent"][either any [n < -7  n > 7][n][none]]	
+;		form-num-ex/type 124123234.5678 func [n [integer!] "Exponent"][either any [n < -7  n > 7][n][none]]    
+;		form-num-ex/type 14123234.5678 func [n [integer!] "Exponent"][either any [n < -7  n > 7][n][none]]    
+;		form-num-ex/type 0.0000000123456789 func [n [integer!] "Exponent"][either any [n < -7  n > 7][n][none]]    
+;		form-num-ex/type 0.000000123456789 func [n [integer!] "Exponent"][either any [n < -7  n > 7][n][none]]    
+;	]
+	
+	;---------------------------------------------------------------------------
+
+	; Experimental refinement approach.
+	set 'format-bytes function [
+		"Return a string containing the size and units, auto-scaled"
+		size [number!]
+		/+ spec [block!] "[as <unit> to <scale> sep <char>]"
+		;/to scale "Rounding precision; default is 1"
+		;/as unit [word!] "One of [bytes KB MB GB TB PB EB ZB YB]"
+		;/sep  ch [char! string!] "Separator to use between number and unit"
+	][
+		if negative? size [
+			return make error! "Format-bytes doesn't like negative numbers"
+		]
+		if none? spec [spec: []]
+		scale: any [spec/to 1]
+		unit: spec/as
+		; 1 byte will come back as "1 bytes", unless we add it as a special case.
+		units: [bytes KB MB GB TB PB EB ZB YB]
+		either unit [
+			if not find units unit [
+				return make error! rejoin [mold unit " is not a valid unit for format-bytes"]
+			]
+			; Convert unit to a scaled power of 2 by finding the offset in
+			; the list of units. e.g. KB = 2 ** 10, MB = 2 ** 20, etc.
+			size: size / (2.0 ** (10 * subtract index? find units unit 1))
+			rejoin [round/to size scale  any [spec/sep ""]  unit]
+		][
+			; Credit to Gabriele Santilli for the idea this is based on.
+			while [size > 1024][
+				size: size / 1024.0
+				units: next units
+			]
+			if tail? units [return make error! "Number too large for format-bytes"]
+			rejoin [round/to size scale  any [spec/sep ""]  units/1]
+		]
+	]
+;	format-bytes 1000000000
+;	format-bytes/+ 1000000000 [as gb]
+;	format-bytes/+ 1000000000 [as gb to .01]
+;	format-bytes/+ 1000000000 [as gb to .01 sep #" "]
+	
 	set 'format-bytes function [
 		"Return a string containing the size and units, auto-scaled"
 		size [number!]
@@ -466,6 +732,8 @@ formatting: context [
 		;	lower limit where Red formats with E notation.
 		either all [n > -0.1  n < .1  n <> 0  not percent? n][
 			; Add 1 to the absolute value of the number, to trick FORM.
+			; We don't want the sign, hence ABS, or we could instead to
+			; `num: form n + (1 * sign? n)`
 			num: form 1 + abs n
 			; Now our first digit is 1, but we added that, so change it to 0.
 			change num #"0"
@@ -663,17 +931,17 @@ formatting: context [
 		/with
 			ch  [char!]    "Alternate fill char (default is space)"
 	][
-    	ch:  any [ch #" "]
-    	sign: case [
+		ch:  any [ch #" "]
+		sign: case [
 			negative? value ["-"]	; Always use - for negative
 			use+  ["+"]				; Force the + sign on
 			left  [" "]				; Reserve space to match +/-
 			'else [""]				; Positive or right align, don't force +
-    	]
-    	if percent? value [dec-len: dec-len + 2]	; Percents look like whole values, but are scaled.
-    	; It would be nice if we could just join the sign to the rest here,
-    	; which I did first. The problem is that fill chars end up to the
-    	; left of it. Fine for spaces, underscore, etc., not for 0.
+		]
+		if percent? value [dec-len: dec-len + 2]	; Percents look like whole values, but are scaled.
+		; It would be nice if we could just join the sign to the rest here,
+		; which I did first. The problem is that fill chars end up to the
+		; left of it. Fine for spaces, underscore, etc., not for 0.
 		either ch = #"0" [
 			value: mold round/to abs value 10 ** negate dec-len
 			value: pad-aligned value either left ['left]['right] (tot-len - length? sign) ch
