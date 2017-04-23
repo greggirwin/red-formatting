@@ -1177,7 +1177,7 @@ Spec:
 Everything about short-format applies here, except that the input is a block,
 and fields don't start with a `/` sigil. Instead, paren! values are used for
 fields, and the format inside them based on Red values, not string parsing.
-HOWEVER, an option would be to use tag! values and apply exactl the same 
+HOWEVER, an option would be to use tag! values and apply exactly the same 
 format as used in short-format. We could also support both, but that gives
 you two datatypes that are escaped as formatting fields in your block.
 
