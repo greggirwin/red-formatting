@@ -185,6 +185,42 @@ formatting: context [
 			right [pad/with/left str wd ch]
 		]
 	]
+
+	; May be worth having something like this, if it will simplify other funcs enough.
+	sign-chars: function [
+		"Return a block with left/right padding values, based on n's sign"
+		n [number!]
+		/use+ "Left: + or -, right: nothing"
+		/acct "Left: ( or space, right: ) or space"
+	][
+		neg?: negative? n
+		vals: case [
+			all [neg? acct]	["()"]		; 
+			all [neg? use+]	[" "]		; Force the + sign on, pad if negative
+			neg?  			["-"]		; - for negative and not accounting
+										; -- Now we know it's not negative --
+			all [positive? n use+]["+"]	; Don't want + for zero
+			acct			[""]		; Positive accounting
+			'else 			[""]		; Don't force +
+		]
+		reduce ['left any [vals/1 ""] 'right any [vals/2 ""]]
+	]
+	e.g. [
+		sign-chars 1
+		sign-chars 0
+		sign-chars -1
+		sign-chars/use+ 1
+		sign-chars/use+ 0
+		sign-chars/use+ -1
+		sign-chars/acct 1
+		sign-chars/acct 0
+		sign-chars/acct -1
+		foreach val [1 0 -1][
+			ch: sign-chars val		print [val tab mold rejoin [ch/left absolute val ch/right]]
+			ch: sign-chars/use+ val	print [val /use+ tab mold rejoin [ch/left absolute val ch/right]]
+			ch: sign-chars/acct val	print [val /acct tab mold rejoin [ch/left absolute val ch/right]]
+		]
+	]	
 	
 	;---------------------------------------------------------------------------
 	; Inspired by how Wolfram works
@@ -210,7 +246,7 @@ formatting: context [
 	; as the exponent of a number. If it's none, the number should be shown
 	; without scientific notation.
 	make-custom-exp-fn: func [body [block!]][
-		func [n [integer!] "Exponent"] body
+		func ["Return exponent to use, or none" n [integer!] "Exponent"] body
 	]
 	exponent-function: function [
 		type [word! function!] "[gen sci eng acct] or custom func"
@@ -256,27 +292,32 @@ formatting: context [
 		/to scale [number!] "Rounding scale (must be positive)"
 	][
 		if n = 0 [return "0"]	; zero? is broken for floats right now
+		if all [scale  scale <= 0][return make error! "Scale must be positive"]
 		if all [scale  scale > 0][
-			if all [percent? n float? scale] [scale: scale / 100.0]
+			if all [percent? n  float? scale] [scale: scale / 100.0]
 			n: round/to n scale
 		]
 		either e: find-E-to-use one-digit-E n any [:t 'gen] [
 			; Form using given exponent
 			rejoin [
 				divide (system/words/to float! n) 10.0 ** e				;!! 10.0, not int 10! Int will round at E=16
-				either all [e e <> 0] [join "e" e][""]
+				either all [e  e <> 0] [join "e" e][""]
 			]
 		][
 			; Form with no E notation
 			;!! Trick FORM into giving us a non-scientific format. Currently, 
 			;   .1 is the lower limit where Red formats with E notation.
 			;	Though now I can't find how I determined that, as 0.0001 works.
-			either all [n > -0.1  n < .1  n <> 0  not percent? n][
+			either all [n > -0.1  n < .1  n <> 0  not percent? n  :t <> 'acct][
 				; Add 1 to the absolute value of the number, to trick FORM.
 				num: form n + (1 * sign? n)
 				; Now our first digit is 1, but we added that, so change it to 0.
 				head change find num #"1" #"0"
-			][form n]
+			][
+				either any [not negative? n  t <> 'acct] [form n][
+					rejoin [#"(" abs n #")"]
+				]
+			]
 		]
 	
 	]
@@ -886,7 +927,10 @@ formatting: context [
 			currency [add-seps format-number-with-mask round/to n .01 "$#,##0.00"] ; $#,##0.00
 			percent  [add-seps format-number-by-width to percent! n 1 2]
 			;percent  [join add-seps next form to money! value * 100 #"%"]
-			;E scientific []	;Use standard scientific notation.
+			sci  scientific  [form-num-ex/type n 'sci]
+			eng  engineering [form-num-ex/type n 'eng]
+			acct accounting  [add-seps form-num-ex/type/to n 'acct .01]
+			;accounting [format-number-via-masks n [pos " #,##0.00 " neg "(#,##0.00)" zero "-" none ""]]
 			ordinal  [add-seps as-ordinal to integer! n]
 
 			base-64  [enbase/base form n 64]
@@ -906,7 +950,6 @@ formatting: context [
 				]
 			]
 
-			accounting [format-number-via-masks n [pos " #,##0.00 " neg "(#,##0.00)" zero "-" none ""]]
 			
 			;rel-days   [num-to-rel-date-time n 'rel-days]
 			;rel-hours  [num-to-rel-date-time n 'rel-hours]
