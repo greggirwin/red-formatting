@@ -550,7 +550,7 @@ should be used. For example, if you want E notation to be used consistently,
 at 8 places, you could use this function:
 
 	cust-exp-fn: formatting/make-custom-exp-fn [
-	    either any [n < -7  n > 7][n][none]
+	    either any [e < -7  e > 7][e][none]
 	]
 
     form-num-ex/type 124123234.5678     :cust-exp-fn == "1.241232345678e8"
@@ -715,16 +715,16 @@ group separators and such are not intuited.
 
     Char    Meaning
 
-	^^      Use next literal char from mask
-	0       Digit placeholder, show 0 if num has no digit there
-	?9      Digit placeholder, show space if num has no digit there
-	        (we'll pick just one of these chars eventually)
-	#       Digit placeholder, show nothing if num has no digit there
-	(       ( for negative numbers, nothing for positive
-	)       ) for negative numbers, space for positive
-	+       - for negative numbers, + for positive
-	-       - for negative numbers, space for positive
-	"..."   Literal text between quotes
+    ^^      Use next literal char from mask
+    0       Digit placeholder, show 0 if num has no digit there
+    ?9      Digit placeholder, show space if num has no digit there
+            (we'll pick just one of these chars eventually)
+    #       Digit placeholder, show nothing if num has no digit there
+    (       ( for negative numbers, nothing for positive
+    )       ) for negative numbers, space for positive
+    +       - for negative numbers, + for positive
+    -       - for negative numbers, space for positive
+    "..."   Literal text between quotes
     $%£¥€¢¤ Pass thru (special char list TBD)
     ' ·_    Group separators (final list TBD)
     ,.      Decimal/Group separators (heuristics driven)
@@ -736,13 +736,10 @@ a new approach for this, different from what I did in R2. It's more
 flexible, allows international support, etc., but it's also ugly and
 slow. Good thing it's just proof of concept for dialect design.    
 
-TBD: [
-    Should we truncate based on mask precision? Currently it is up
-    to the caller to round, but it makes sense for the mask to 
-    control rounding.
-    
-    Should we allow separators in the decimal portion?
-]
+NOTE: Should we truncate based on mask precision? Currently it is up
+      to the caller to round, but it makes sense for the mask to 
+      control rounding.
+      Should we allow separators in the decimal portion?
 
 Spec:
 ....
