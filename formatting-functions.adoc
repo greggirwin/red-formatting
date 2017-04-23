@@ -860,7 +860,9 @@ to be created and used directly.
     percent 
     ordinal 
 
-    ;TBD E scientific
+    sci scientific
+    eng engineering
+    acct accounting
             
     base-64 
     hex     
@@ -870,8 +872,6 @@ to be created and used directly.
     binary  
     min-bin         Binary with no leading 0s
             
-    ;TBD accounting      [pos " #,##0.00 " neg "(#,##0.00)" zero "-" none ""]
-
 
 Spec:
 ....
