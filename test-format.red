@@ -162,7 +162,6 @@ with formatting [
 			format-bytes/SI 99999999999999999999999999
 			format-bytes/SI 999999999999999999999999999
 			format-bytes/SI/to 999999999999999999999999999 .01
-			format-bytes/SI 99999999999999999999999999999
 			
 			format-bytes/SI 999999999
 			format-bytes/SI/as 999999999 'GB
