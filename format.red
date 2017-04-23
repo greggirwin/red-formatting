@@ -246,7 +246,7 @@ formatting: context [
 	; as the exponent of a number. If it's none, the number should be shown
 	; without scientific notation.
 	make-custom-exp-fn: func [body [block!]][
-		func ["Return exponent to use, or none" n [integer!] "Exponent"] body
+		func ["Return exponent to use, or none" e [integer!] "Exponent"] body
 	]
 	exponent-function: function [
 		type [word! function!] "[gen sci eng acct] or custom func"

@@ -486,8 +486,8 @@ with formatting [
 	print mold reduce tests/merge-number-mask
 	print mold reduce tests/format-number-with-style
 	print mold reduce tests/format-number-by-width
-	cust-exp-fn: formatting/make-custom-exp-fn [either any [n < -7  n > 7][n][none]]
-	cust-exp-fn: func [n [integer!] "Exponent"][either any [n < -7  n > 7][n][none]]
+	cust-exp-fn: formatting/make-custom-exp-fn [either any [e < -7  e > 7][e][none]]
+	cust-exp-fn: func [n [integer!] "Exponent"][either any [e < -7  e > 7][e][none]]
 	print mold reduce tests/form-num-ex
 	;print mold reduce tests/
 	;print mold reduce tests/
