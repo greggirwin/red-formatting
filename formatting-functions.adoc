@@ -421,7 +421,7 @@ Examples:
 
 == format-bytes
 
-> Return a string containing the size and units, auto-scaled by default
+> "Return a string containing the size and unit suffix, auto-scaled"
 
 File sizes anyone? Download progress?
 
@@ -429,8 +429,9 @@ Spec:
 ....
     size [number!]
     /to scale "Rounding precision; default is 1"
-    /as unit [word!] "One of [bytes KB MB GB TB PB EB ZB YB]"
+    /as unit [word!] "units: [bytes KiB MiB GiB TiB PiB EiB ZiB YiB]"
     /sep  ch [char! string!] "Separator to use between number and unit"
+    /SI "Use SI unit size of (1000); units: [bytes kB MB GB TB PB EB ZB YB]"
 ....
 
 Examples:
@@ -441,11 +442,11 @@ Examples:
     == "391KB"
     >> format-bytes 400000000
     == "381MB"
-    >> format-bytes/as 400000000 'KB
+    >> format-bytes/as 400000000 'KiB
     == "390625KB"
-    >> format-bytes/as 400000000 'GB            ; Note rounding!
+    >> format-bytes/as 400000000 'GiB            ; Note rounding!
     == "0GB"
-    >> format-bytes/as/to 400000000 'GB .01
+    >> format-bytes/as/to 400000000 'GiB .01
     == "0.37GB"
     >> format-bytes/sep 500 #" "
     == "500 bytes"
