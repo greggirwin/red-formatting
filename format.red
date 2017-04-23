@@ -293,6 +293,7 @@ formatting: context [
 	][
 		if n = 0 [return "0"]	; zero? is broken for floats right now
 		if all [scale  scale <= 0][return make error! "Scale must be positive"]
+		; Round
 		if all [scale  scale > 0][
 			if all [percent? n  float? scale] [scale: scale / 100.0]
 			n: round/to n scale
@@ -1167,19 +1168,23 @@ block-format-ctx: context [
 			"Format and substitute values into a template block"
 			input [block!] "Template block containing `(/value:format)` fields and literal data"
 			data "Value(s) to apply to template fields"
+			/only "Return as block, instead of string"
 		][
 			result: clear []
 			if series? data [data: copy data]
 			if none? spec: parse-as-block-format input [return none]		; Bail if the format string wasn't valid
-			if object? spec [return apply-format-by-key+data spec data]		; We got a single format spec
+			if object? spec [												; We got a single format spec
+				result: apply-format-by-key+data spec data
+				return either only [reduce [result]][result]
+			]
 			collect/into [
 				foreach item spec [
-					keep either not object? item [mold :item][					; literal data from template string
+					keep either not object? item [mold :item][				; literal data from template string
 						apply-format-by-key+data item data
 					]
 				]
 			] result
-			form result
+			either only [result][form result]
 		]
 	]
 	
@@ -1204,17 +1209,20 @@ set 'format-value func [
 	]
 ]
 
+; Interpolation funcs are not handled here, because arg order is reversed.
 set 'format function [
 	value [any-type!]
 	fmt   [word! string! block! function! object! map!] "Named or custom format"
 ][
-	;type: type?/word value
+	type: type?/word value
 	;print ['xxx type mold value mold :fmt]
 	case [
 		none? :value []	; dispatch based on fmt
-		find [integer! float! percent!] type [format-number value fmt] ; decimal! money!
+		all [number? :value  fmt <> 'bytes] [format-number value fmt] ; decimal! money!
+		all [number? :value  fmt  = 'bytes] [format-bytes value fmt]
 		;find [date! time!] type [format-date-time value fmt]
 		logic? :value      [format-logic  value fmt]
+		
 		any-string? :value [format-string value fmt]
 		block? :value      []
 	]
