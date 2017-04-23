@@ -536,7 +536,7 @@ formatting: context [
 		/as unit [word!] "units: [bytes KiB MiB GiB TiB PiB EiB ZiB YiB]"
 		/sep  ch [char! string!] "Separator to use between number and unit"
 		/SI "Use SI unit size of (1000); units: [bytes kB MB GB TB PB EB ZB YB]"
-		/local unit-sz
+		/local unit-sz units
 	][
 		scale: any [scale 1]
 		; 1 byte will come back as "1 bytes", unless we add it as a special case.
