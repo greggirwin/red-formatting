@@ -237,17 +237,17 @@ formatting: context [
 ;			acct [[none]]									; Never use E notation
 ;		]
 ;	]
-	_exp-fn-gen:  func [n [integer!] "Exponent"][either any [n < -4  n > 15][n][none]]	; Use E if <= 1e-5 or >= 1e16
-	_exp-fn-sci:  func [n [integer!] "Exponent"][either n = 0 [none][n]]                ; E for values >= 10
-	_exp-fn-eng:  func [n [integer!] "Exponent"][round/to n - 1 3]                      ; Use E that is a multiple of 3, scaled for 1-3 digits to left of decimal
-	_exp-fn-acct: func [n [integer!] "Exponent"][none]                                  ; Never use E notation
-	;_exp-fn-: func [n [integer!] "Exponent"][]
 	; If the result of an exponent-function is an integer, it should be used
 	; as the exponent of a number. If it's none, the number should be shown
 	; without scientific notation.
-	make-custom-exp-fn: func [body [block!]][
+	make-exponent-function: func [body [block!]][
 		func ["Return exponent to use, or none" e [integer!] "Exponent"] body
 	]
+	_exp-fn-gen:  make-exponent-function [either any [e < -4  e > 15][e][none]]  ; Use E if <= 1e-5 or >= 1e16
+	_exp-fn-sci:  make-exponent-function [either e = 0 [none][e]]                ; E for values >= 10
+	_exp-fn-eng:  make-exponent-function [round/to e - 1 3]                      ; Use E that is a multiple of 3, scaled for 1-3 digits to left of decimal
+	_exp-fn-acct: make-exponent-function [none]                                  ; Never use E notation
+	;_exp-fn-: func [n [integer!] "Exponent"][]
 	exponent-function: function [
 		type [word! function!] "[gen sci eng acct] or custom func"
 	][
