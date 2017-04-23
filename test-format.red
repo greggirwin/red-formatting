@@ -124,13 +124,55 @@ with formatting [
 			format-bytes 99999999999999999999999999999
 			
 			format-bytes 999999999
-			format-bytes/as 999999999 'GB
-			format-bytes/as/to 999999999 'GB 1.0
+			format-bytes/as 999999999 'GiB
+			format-bytes/as/to 999999999 'GiB 1.0
 			format-bytes/to 999999999 .01
-			format-bytes/as/to 999999999 'GB .01
+			format-bytes/as/to 999999999 'GiB .01
 			format-bytes/to/as 1500 .1 'bytes
 			format-bytes/to/as/sep 1500 .1 'bytes space
 			format-bytes/to/as/sep 1500 .1 'bytes #"_"
+			format-bytes 1125899906842624.0	; 1PiB
+			
+			format-bytes/SI 1
+			format-bytes/SI 1500
+			format-bytes/SI/to 1500 .1
+			format-bytes/SI 2048
+			format-bytes/SI 9999
+			format-bytes/SI 99999
+			format-bytes/SI 999999
+			format-bytes/SI 9999999
+			format-bytes/SI 99999999
+			format-bytes/SI 999999999
+			format-bytes/SI 9999999999
+			format-bytes/SI 99999999999
+			format-bytes/SI 999999999999
+			format-bytes/SI 9999999999999
+			format-bytes/SI 99999999999999
+			format-bytes/SI 999999999999999
+			format-bytes/SI 9999999999999999
+			format-bytes/SI 99999999999999999
+			format-bytes/SI 999999999999999999
+			format-bytes/SI 9999999999999999999
+			format-bytes/SI 99999999999999999999
+			format-bytes/SI 999999999999999999999
+			format-bytes/SI 9999999999999999999999
+			format-bytes/SI 99999999999999999999999
+			format-bytes/SI 999999999999999999999999
+			format-bytes/SI 9999999999999999999999999
+			format-bytes/SI 99999999999999999999999999
+			format-bytes/SI 999999999999999999999999999
+			format-bytes/SI/to 999999999999999999999999999 .01
+			format-bytes/SI 99999999999999999999999999999
+			
+			format-bytes/SI 999999999
+			format-bytes/SI/as 999999999 'GB
+			format-bytes/SI/as/to 999999999 'GB 1.0
+			format-bytes/SI/to 999999999 .01
+			format-bytes/SI/as/to 999999999 'GB .01
+			format-bytes/SI/to/as 1500 .1 'bytes
+			format-bytes/SI/to/as/sep 1500 .1 'bytes space
+			format-bytes/SI/to/as/sep 1500 .1 'bytes #"_"
+			
 		]
 		format-logic [
 			format-logic true  'true-false

@@ -461,74 +461,108 @@ formatting: context [
 	;---------------------------------------------------------------------------
 
 	; Experimental refinement approach.
-	set 'format-bytes function [
-		"Return a string containing the size and units, auto-scaled"
-		size [number!]
-		/+ spec [block!] "[as <unit> to <scale> sep <char>]"
-		;/to scale "Rounding precision; default is 1"
-		;/as unit [word!] "One of [bytes KB MB GB TB PB EB ZB YB]"
-		;/sep  ch [char! string!] "Separator to use between number and unit"
-	][
-		if negative? size [
-			return make error! "Format-bytes doesn't like negative numbers"
-		]
-		if none? spec [spec: []]
-		scale: any [spec/to 1]
-		unit: spec/as
-		; 1 byte will come back as "1 bytes", unless we add it as a special case.
-		units: [bytes KB MB GB TB PB EB ZB YB]
-		either unit [
-			if not find units unit [
-				return make error! rejoin [mold unit " is not a valid unit for format-bytes"]
-			]
-			; Convert unit to a scaled power of 2 by finding the offset in
-			; the list of units. e.g. KB = 2 ** 10, MB = 2 ** 20, etc.
-			size: size / (2.0 ** (10 * subtract index? find units unit 1))
-			rejoin [round/to size scale  any [spec/sep ""]  unit]
-		][
-			; Credit to Gabriele Santilli for the idea this is based on.
-			while [size > 1024][
-				size: size / 1024.0
-				units: next units
-			]
-			if tail? units [return make error! "Number too large for format-bytes"]
-			rejoin [round/to size scale  any [spec/sep ""]  units/1]
-		]
-	]
+;	set 'format-bytes function [
+;		"Return a string containing the size and units, auto-scaled"
+;		size [number!]
+;		/+ spec [block!] "[as <unit> to <scale> sep <char>]"
+;		;/to scale "Rounding precision; default is 1"
+;		;/as unit [word!] "One of [bytes KB MB GB TB PB EB ZB YB]"
+;		;/sep  ch [char! string!] "Separator to use between number and unit"
+;	][
+;		if negative? size [
+;			return make error! "Format-bytes doesn't like negative numbers"
+;		]
+;		if none? spec [spec: []]
+;		scale: any [spec/to 1]
+;		unit: spec/as
+;		; 1 byte will come back as "1 bytes", unless we add it as a special case.
+;		units: [bytes KB MB GB TB PB EB ZB YB]
+;		either unit [
+;			if not find units unit [
+;				return make error! rejoin [mold unit " is not a valid unit for format-bytes"]
+;			]
+;			; Convert unit to a scaled power of 2 by finding the offset in
+;			; the list of units. e.g. KB = 2 ** 10, MB = 2 ** 20, etc.
+;			size: size / (2.0 ** (10 * subtract index? find units unit 1))
+;			rejoin [round/to size scale  any [spec/sep ""]  unit]
+;		][
+;			; Credit to Gabriele Santilli for the idea this is based on.
+;			while [size > 1024][
+;				size: size / 1024.0
+;				units: next units
+;			]
+;			if tail? units [return make error! "Number too large for format-bytes"]
+;			rejoin [round/to size scale  any [spec/sep ""]  units/1]
+;		]
+;	]
 ;	format-bytes 1000000000
 ;	format-bytes/+ 1000000000 [as gb]
 ;	format-bytes/+ 1000000000 [as gb to .01]
 ;	format-bytes/+ 1000000000 [as gb to .01 sep #" "]
 	
+;	set 'format-bytes function [
+;		"Return a string containing the size and units, auto-scaled"
+;		size [number!]
+;		/to scale "Rounding precision; default is 1"
+;		/as unit [word!] "One of [bytes KB MB GB TB PB EB ZB YB]"
+;		/sep  ch [char! string!] "Separator to use between number and unit"
+;	][
+;		scale: any [scale 1]
+;		; 1 byte will come back as "1 bytes", unless we add it as a special case.
+;		units: [bytes KB MB GB TB PB EB ZB YB]
+;		either unit [
+;			if not find units unit [
+;				return make error! rejoin [mold unit " is not a valid unit for format-bytes"]
+;			]
+;			; Convert unit to a scaled power of 2 by finding the offset in
+;			; the list of units. e.g. KB = 2 ** 10, MB = 2 ** 20, etc.
+;			size: size / (2.0 ** (10 * subtract index? find units unit 1))
+;			rejoin [round/to size scale  any [ch ""]  unit]
+;		][
+;			; Credit to Gabriele Santilli for the idea this is based on.
+;			while [size > 1024][
+;				size: size / 1024.0
+;				units: next units
+;			]
+;			if tail? units [return make error! "Number too large for format-bytes"]
+;			rejoin [round/to size scale  any [ch ""]  units/1]
+;		]
+;	]
+		
 	set 'format-bytes function [
-		"Return a string containing the size and units, auto-scaled"
+		"Return a string containing the size and unit suffix, auto-scaled"
 		size [number!]
 		/to scale "Rounding precision; default is 1"
-		/as unit [word!] "One of [bytes KB MB GB TB PB EB ZB YB]"
+		/as unit [word!] "units: [bytes KiB MiB GiB TiB PiB EiB ZiB YiB]"
 		/sep  ch [char! string!] "Separator to use between number and unit"
+		/SI "Use SI unit size of (1000); units: [bytes kB MB GB TB PB EB ZB YB]"
+		/local unit-sz
 	][
 		scale: any [scale 1]
 		; 1 byte will come back as "1 bytes", unless we add it as a special case.
-		units: [bytes KB MB GB TB PB EB ZB YB]
+		;!! Float used for unit-sz to prevent integer division.
+		set [unit-sz units] either SI [
+			[1000.0 [bytes kB MB GB TB PB EB ZB YB]]
+		][
+			[1024.0 [bytes KiB MiB GiB TiB PiB EiB ZiB YiB]]
+		]
 		either unit [
 			if not find units unit [
 				return make error! rejoin [mold unit " is not a valid unit for format-bytes"]
 			]
-			; Convert unit to a scaled power of 2 by finding the offset in
-			; the list of units. e.g. KB = 2 ** 10, MB = 2 ** 20, etc.
-			size: size / (2.0 ** (10 * subtract index? find units unit 1))
+			; Convert unit to a scaled power based on the offset in the list of units. 
+			size: size / (unit-sz ** ((index? find units unit) - 1))
 			rejoin [round/to size scale  any [ch ""]  unit]
 		][
 			; Credit to Gabriele Santilli for the idea this is based on.
-			while [size > 1024][
-				size: size / 1024.0
+			while [size >= unit-sz][
+				size: size / unit-sz
 				units: next units
 			]
 			if tail? units [return make error! "Number too large for format-bytes"]
 			rejoin [round/to size scale  any [ch ""]  units/1]
 		]
 	]
-		
 	; Should this also support integers, so format-number doesn't have to call this 
 	; func? Really, it could support any value that can be converted to logic, but
 	; is that more helpful to the user, or will it make things more confusing for
