@@ -79,6 +79,17 @@ with formatting [
 			pad-aligned "xxxxxxxxx" 'right 10 #"."
 			pad-aligned "xxxxxxxxxx" 'right 10 #"."
 			pad-aligned "xxxxxxxxxxx" 'right 10 #"."
+		]
+		sign-chars [
+			sign-chars 1
+			sign-chars 0
+			sign-chars -1
+			sign-chars/use+ 1
+			sign-chars/use+ 0
+			sign-chars/use+ -1
+			sign-chars/acct 1
+			sign-chars/acct 0
+			sign-chars/acct -1
 		]	
 		format-bytes [
 			format-bytes 1
@@ -198,7 +209,9 @@ with formatting [
 			format-number-with-style 0 'bin
 			format-number-with-style 0 'min-bin
 			
-			;format-number-with-style 0 'accounting
+			format-number-with-style 0 'sci
+			format-number-with-style 0 'eng
+			format-number-with-style 0 'accounting
 
 			format-number-with-style 12345.678 'r-general
 			format-number-with-style 12345.678 'r-standard
@@ -222,7 +235,9 @@ with formatting [
 			format-number-with-style 32767 'bin
 			format-number-with-style 32767 'min-bin
 
-			;format-number-with-style 12345.678 'accounting
+			format-number-with-style 12345.678 'sci
+			format-number-with-style 12345.678 'eng
+			format-number-with-style 12345.678 'accounting
 
 			format-number-with-style -12345.678 'r-general
 			format-number-with-style -12345.678 'r-standard
@@ -244,7 +259,10 @@ with formatting [
 			format-number-with-style -12345.678 'bin
 			format-number-with-style -12345.678 'min-bin
 
-			;format-number-with-style -12345.678 'accounting
+			format-number-with-style -12345.678 'sci
+			format-number-with-style -12345.678 'eng
+			format-number-with-style -12345.678 'accounting
+			format-number-with-style -12345 'accounting
 			
 		]
 		format-number-by-width [
@@ -414,12 +432,14 @@ with formatting [
 			form-num-ex/type 14123234.5678 		:cust-exp-fn
 			form-num-ex/type 0.0000000123456789 :cust-exp-fn    
 			form-num-ex/type 0.000000123456789 	:cust-exp-fn
+			form-num-ex/type -1'234'500'000.0 	:cust-exp-fn
 			
 		]
 	]
 	print mold reduce tests/join
 	print mold reduce tests/form-num-with-group-seps
 	print mold reduce tests/pad-aligned
+	print mold reduce tests/sign-chars
 	print mold reduce tests/format-bytes
 	print mold reduce tests/format-logic
 	print mold reduce tests/merge-number-mask
@@ -602,7 +622,7 @@ block-form-tests: context [
 
 		[(:< fixed)]
 		[(money)]
-		[(/num :+<>Z_ 5 2 general)]
+		[(/num :+<Z_ 5 2 general)]
 		[(/abc ordinal) "xyz"]
 		[(/abc 5 2 hex) (:< 5 2)]
 		[(/abc 'hex) ":xyz"]
