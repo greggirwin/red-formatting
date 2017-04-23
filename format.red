@@ -314,7 +314,7 @@ formatting: context [
 				; Now our first digit is 1, but we added that, so change it to 0.
 				head change find num #"1" #"0"
 			][
-				either any [not negative? n  t <> 'acct] [form n][
+				either any [not negative? n  :t <> 'acct] [form n][
 					rejoin [#"(" abs n #")"]
 				]
 			]
