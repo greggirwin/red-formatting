@@ -308,11 +308,16 @@ formatting: context [
 			;!! Trick FORM into giving us a non-scientific format. Currently, 
 			;   .1 is the lower limit where Red formats with E notation.
 			;	Though now I can't find how I determined that, as 0.0001 works.
-			either all [n > -0.1  n < .1  n <> 0  not percent? n  :t <> 'acct][
+			either all [n > -0.1  n < .1  n <> 0  not percent? n][
 				; Add 1 to the absolute value of the number, to trick FORM.
 				num: form n + (1 * sign? n)
 				; Now our first digit is 1, but we added that, so change it to 0.
 				head change find num #"1" #"0"
+				; Apply accounting format
+				if all [negative? n :t = 'acct] [
+					append change find num #"-" #"(" #")"
+				]
+				num
 			][
 				either any [not negative? n  :t <> 'acct] [form n][
 					rejoin [#"(" abs n #")"]
@@ -929,7 +934,7 @@ formatting: context [
 			;percent  [join add-seps next form to money! value * 100 #"%"]
 			sci  scientific  [form-num-ex/type n 'sci]
 			eng  engineering [form-num-ex/type n 'eng]
-			acct accounting  [add-seps form-num-ex/type/to n 'acct .01]
+			acct accounting  [add-seps form-num-ex/type n 'acct]
 			;accounting [format-number-via-masks n [pos " #,##0.00 " neg "(#,##0.00)" zero "-" none ""]]
 			ordinal  [add-seps as-ordinal to integer! n]
 
