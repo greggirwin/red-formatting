@@ -940,13 +940,13 @@ Placeholders (let's call them fields) look like this:
 * `:[flags][width][.precision]['style]`
 * `:[flags]['style]`
 
-That is a key that starts with a slash, with an optional format. Or just
+That is, a key that starts with a slash, with an optional format. Or just
 a format, which starts with a colon. Take a deep breath, there's a lot
 going on here.
 
 A `key` can be an integer, name, or expression to evaluate. Where `printf`
 naturally consumes the next arg for each field, we do the same thing if
-no key is given. Thats where your field starts with `:` rather than `/`.
+no key is given. That's where your field starts with `:` rather than `/`.
 If there *is* a key, how it behaves depends on the data. Basically, we 
 have 5 types of keys and two main categories of data. The data categories
 we'll call `structured` and `unstructured`. Structured data are blocks,
@@ -966,7 +966,7 @@ Remember, keys start with `/` as their sigil in the template string
     word        /last-name
 ....
 
-=== Unstructured
+=== Unstructured Data Behaviors
 
 ....
     Key Type    Action
@@ -978,13 +978,13 @@ Remember, keys start with `/` as their sigil in the template string
     word        Evaluate the word, e.g., global-var
 ....
 
-=== Structured
+=== Structured Data Behaviors
 
 ....
     Key Type    Action
     
     none        If data is a series, pick first and advance; else none
-    integer     Pick from data if series, or from values-of data if object/map
+    integer     Pick from data if series, or from `values-of data` if object/map
     paren       Do paren
     path        Try to find deep key in data first, else evaluate the path
     word        Try to find key in data first, else evaluate the word
@@ -1004,7 +1004,7 @@ Formats follow the basic idea from `printf`, but do not share its exact syntax.
 * `:[flags][width][.precision]['style]`
 * `:[flags]['style]`
 
-That is, 0 or more flags, followed by an optional width and precision, with a
+That is, zero or more flags, followed by an optional width and precision, with a
 style name option as well. Style design isn't fully in place yet, but it may
 either be an override for the other options, or the other options may merge into
 the style. For example, you could use the 'accounting style, but override the
@@ -1014,14 +1014,14 @@ Flags:
 ....
     Char    Meaning
 
-    _
+    _       No behavior, but can be used before 0 as the first flag in `block-form`
     +       Show + instead of space for positive number's sign
-    0       Set fill char to 0 instead of space. (Can't be first flag char)
+    0       Set fill char to 0 instead of space. (Can't be first flag char in `block-form`)
     <       Left align
     >       Right align (default)
     Zz      Set fill char to 0 instead of space. (May remove 0 flag. This is better.)
-    º       Ordinal (just an idea)
-    $¤      Money
+    º       Ordinal (char 186)
+    $¤      Money (¤ is char 164)
     
 ....
 
