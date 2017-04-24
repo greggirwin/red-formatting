@@ -440,17 +440,22 @@ Spec:
 Examples:
 ....
     >> format-bytes 4000
-    == "4KB"
+    == "4KiB"
     >> format-bytes 400000
-    == "391KB"
+    == "391KiB"
     >> format-bytes 400000000
-    == "381MB"
+    == "381MiB"
     >> format-bytes/as 400000000 'KiB
-    == "390625KB"
+    == "390625KiB"
+    >> format-bytes/as 400000000 'KB
+    *** User Error: "KB is not a valid unit for format-bytes"
+    *** Where: ???
+    >> format-bytes/as/si 400000000 'KB
+    == "400000KB"    
     >> format-bytes/as 400000000 'GiB            ; Note rounding!
-    == "0GB"
+    == "0GiB"
     >> format-bytes/as/to 400000000 'GiB .01
-    == "0.37GB"
+    == "0.37GiB"
     >> format-bytes/sep 500 #" "
     == "500 bytes"
 ....
@@ -1193,7 +1198,7 @@ Spec:
 ....
 
 Everything about short-format applies here, except that the input is a block,
-and fields don't start with a `/` sigil. Instead, paren! values are used for
+and fields don't start with a `/` sigil. Instead, `paren!` values are used for
 fields, and the format inside them based on Red values, not string parsing.
 HOWEVER, an option would be to use tag! values and apply exactly the same 
 format as used in short-format. We could also support both, but that gives
