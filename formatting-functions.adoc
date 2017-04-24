@@ -942,6 +942,13 @@ That is, a key that starts with a slash, with an optional format. Or just
 a format, which starts with a colon. Take a deep breath, there's a lot
 going on here.
 
+NOTE: One of the goals with the above syntax was to keep it minimally
+      invasive in strings. However, if we can live with extra noise,
+      the `:(...):` syntax could be use, which would make it even
+      closer to `composite` and `block-form`. In fact, it would likely
+      then take on *exactly* `block-form` syntax, and they could share
+      a parser. More verbose though, with required whitespace, etc.
+
 A `key` can be an integer, name, or expression to evaluate. Where `printf`
 naturally consumes the next arg for each field, we do the same thing if
 no key is given. That's where your field starts with `:` rather than `/`.
