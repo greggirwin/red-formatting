@@ -94,6 +94,7 @@ formatting: context [
 
 	; I've never liked the name of this func, but I'm including it here
 	; because the behavior is handy for how I'm merging masks currently.
+	; pick-and-advance
 	first+: func [
 		"Return first value in series, and increment the series index."
 		'word [word! paren!] "Word must be a series."
@@ -112,7 +113,7 @@ formatting: context [
 	join: func [
 		"Concatenate/merge values"
 		a "Coerced to string if not a series, map, or object"
-		b "Single value or block of values; reduced if a is not an object or map"
+		b "Single value or block of values; reduced if `a` is not an object or map"
 	][
 		if all [block? :b  not object? :a  not map? :a] [b: reduce b]
 		case [
@@ -122,7 +123,7 @@ formatting: context [
 			'else      [append form :a :b]
 		]
 	]
-		
+
 	;---------------------------------------------------------------------------
 
 	set 'ordinal-suffix func [	; English only right now.
@@ -1167,8 +1168,9 @@ block-format-ctx: context [
 		set 'block-form function [
 			"Format and substitute values into a template block"
 			input [block!] "Template block containing `(/value:format)` fields and literal data"
-			data "Value(s) to apply to template fields"
-			/only "Return as block, instead of string"
+			data   "Value(s) to apply to template fields"
+			/only  "Return as block, instead of string"
+			/tight "Don't put spaces between elements"
 		][
 			result: clear []
 			if series? data [data: copy data]
@@ -1184,7 +1186,7 @@ block-format-ctx: context [
 					]
 				]
 			] result
-			either only [result][form result]
+			either only [result][either tight [rejoin result][form result]]
 		]
 	]
 	
