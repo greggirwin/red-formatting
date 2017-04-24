@@ -1169,6 +1169,16 @@ apply-test
     OUTPUT: "First: gregg   | Last:    irwin| phone:  | "
 ....
 
+Here's one example of a `short-format` string converted to use the `composite` syntax.
+
+....
+    ; short-form
+	"Color :'general | idx3 /3:'money | num2 /N2:<'general | pi /system/words/pi:<'fixed | /(1 + 1) /now/time" [
+    ; composite
+	"Color :(general):| idx3 :(/3 money):| num2 :(/N2 :< general):| pi :(system/words/pi :< fixed):| :((1 + 1)): :(now/time):"
+....
+
+
 == block-form
 
 > Format and substitute values into a template block
