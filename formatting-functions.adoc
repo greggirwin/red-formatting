@@ -268,6 +268,7 @@ respectively.
     as-ordinal               Minor  Return the ordinal string for a number (1st, 2nd, 3rd, etc.)
     format-bytes             Major  Return a string containing the size and units, auto-scaled by default
     format-logic             Major  Format a logic value as a string, custom or named format
+    format-string            Major  Alignment is the main feature, with alt fill, and case changes.
     form-num-with-group-seps Minor  Insert group separators into a numeric string
     form-num-ex              Major  Extended FORM for numbers, lets you control E notation and rounding
     format-by-width          Minor  Formats a number given a total length and a maximum number of decimal digits. No separators added.
@@ -500,6 +501,46 @@ Examples:
     >> mold-logic true 'yes-no
     == yes-no
 ....
+
+== format-string
+
+We have `pad` as a standard today, and that's the main feature when formatting
+strings, so the rest may be moot. The one alignment feature it doesn't offer
+is centering, and it is limited to single char values for fill. Aside from that,
+the name is the main thing to consider. I've always felt, and this is very
+subjective, that `pad` leaves room for confusion. The doc string makes it clear,
+and the default is a good choice. It's just a matter of remembering that pad
+is the opposite of align. i.e., `pad(/right)` is the default, which gives you a
+left-aligned string, while `pad/left` right aligns the string.
+
+Internally, formats with named fields for alignment will use `align` or `justify`
+as the name.
+
+Two other possible features for string formatting are simple and complex case
+control. Simple means changing to upper or lowercase, perhaps with a `/part`
+option. Complex means smart capitalization. This requires a small set of rules,
+which can cover a lot of ground. Options like CamelCase are simple, but of 
+questionable value. Mixed case formatting is perhaps most useful when dealing
+with scraped data, which may be in all caps.
+
+The interface, as with others gives a choice between a standard function with
+refinements model, a structured spec, or a dialect. The dialect can be very
+simple, because there are few options and each has a distinct type or keyword.
+Integer! for width, [left center right] for alignment, string or char for fill,
+and possibly [upper lower mixed] for case keywords. Optional param names could
+also be included, effectively making the dialect look like a strutcured spec
+when they are used.
+
+Spec:
+....
+
+....
+
+Examples:
+....
+
+....
+
 
 == form-num-with-group-seps
 
