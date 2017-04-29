@@ -167,6 +167,9 @@ tests: context [
 		; "Color @<10, number1 @3, number2 @05, float @<5.2.\n" ["Red" 2 3 -45.6]
 		; "Color !<10, number1 !3, number2 !05, float !<5.2.\n" ["Red" 2 3 -45.6]
 
+		; Composite syntax?
+		;"Color :(general):| idx3 :(/3 acct):| num2 :(/N2 :< general):| pi :(system/words/pi :< fixed):| :((1 + 1)): :(now/time):"
+
 		"Color :'general | idx3 /3:'money | num2 /N2:<'general | pi /system/words/pi:<'fixed | /(1 + 1) /now/time" [
 			"Red" n2 2 3 n4 -45.6
 		]
