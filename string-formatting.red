@@ -92,6 +92,96 @@ string-formatting: context [
 		
 	;---------------------------------------------------------------------------
 
+	set 'align function [
+		{Justify the given string to the specified width and direction}
+		s  [any-string!]  "The string to justify"
+		wd [integer!] "The target width, in characters"
+		/left	"Left align the string (default)"
+		/center "Center align the string" 
+;			{Center justify the string. If the total length of the padding
+;			is an odd number of characters, the extra character will be on
+;			the right.}
+		/right	"Right align the string"
+		/with "Fill with something other than space" 
+;			{Allows you to specify filler other than space. If you specify a
+;			string more than 1 character in length, it will be repeated as
+;			many times as necessary.}
+			filler [any-string! char!] "The character, or string, to use as filler"
+	][
+		if 0 >= pad-len: (wd - length? s) [return s]	; Never truncate
+		filler: form any [filler space]
+		result: head insert/dup make string! wd filler (wd / length? filler)
+		; If they gave us a multi-char filler, and it isn't evenly multiplied
+		; into the desired width, we have to add some extra chars at the end
+		; to make up for the difference.
+		if wd > length? result [
+			append result copy/part filler (wd - length? result)
+		]
+		pos: either center [
+			add 1 to integer! divide pad-len 2
+		][
+			either right [add 1 pad-len] [1]
+		]
+		head change/part at result pos s length? s
+	]
+	e.g. [
+		align "a" 10
+		align/center "a" 10
+		align/right "a" 10
+		align/with "a" 10 #"*"
+		align/center/with "a" 10 #"*"
+		align/right/with "a" 10 #"*"
+		align/with "a" 10 "._"
+		align/center/with "a" 10 "._"
+		align/right/with "a" 10 "._"
+		align/with "a" 10 "+________+"
+		align/center/with "a" 10 "+________+"
+		align/right/with "a" 10 "+________+"
+		template: "+________+"
+		align/with "abcd" length? template template
+		align/center/with "abcd" length? template template
+		align/right/with "abcd" length? template template
+	]
+
+	fill: function [
+		str [any-string!] "Template string"
+		align [word!] "[left center right]"
+		val "(formed) Value to insert in template string"
+		;/trunc "Truncate val if longer than str" ;?? make ellipsis last char if truncated?
+	][
+		str: copy str							; Don't modify template string
+		if not any-string? val [val: form val]	; Prep the value
+		diff: (length? str) - (length? val)		; Find the length difference between them
+		if not positive? diff [return val]		; Never truncate the formed value
+		pos: switch/default align [
+			left   [1]
+			center [add 1 to integer! divide diff 2]
+			right  [add 1 diff]
+		][1]
+		head change at str pos val
+	]
+	e.g. [
+		template: "+________+"
+		fill template 'left   ""
+		fill template 'right  ""
+		fill template 'center ""
+		fill template 'left   "abc"
+		fill template 'right  "abc"
+		fill template 'center "abc"
+		fill template 'left   "abcd"
+		fill template 'right  "abcd"
+		fill template 'center "abcd"
+		fill template 'left   "abcdefghi"
+		fill template 'right  "abcdefghi"
+		fill template 'center "abcdefghi"
+		fill template 'left   "abcdefghij"
+		fill template 'right  "abcdefghij"
+		fill template 'center "abcdefghij"
+		fill template 'left   "abcdefghijk"
+		fill template 'right  "abcdefghijk"
+		fill template 'center "abcdefghijk"
+	]	
+
 	pad-aligned: func [
 		"Wrapper for `pad` to ease refinement propagation"
 		str [string!] align [word!] wd [integer!] ch [char!]
