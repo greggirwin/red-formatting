@@ -268,7 +268,8 @@ respectively.
     as-ordinal               Minor  Return the ordinal string for a number (1st, 2nd, 3rd, etc.)
     format-bytes             Major  Return a string containing the size and units, auto-scaled by default
     format-logic             Major  Format a logic value as a string, custom or named format
-    format-string            Major  Alignment is the main feature, with alt fill, and case changes.
+    format-string            Major  Alignment is the main feature, with alt fill, and case changes
+    fill                     Minor  Efficiently fill a template string with a formed value (maybe Private)
     form-num-with-group-seps Minor  Insert group separators into a numeric string
     form-num-ex              Major  Extended FORM for numbers, lets you control E notation and rounding
     format-by-width          Minor  Formats a number given a total length and a maximum number of decimal digits. No separators added.
@@ -1179,7 +1180,7 @@ apply-test
 apply-test
     INPUT:  "Color: :<10, number1/ :3, http://:2, float: :<5.2"
     VALUE:  ["Red" 3 8080 -45.6]
-    OUTPUT: {Color: 8080      , number1/    , http://  , float:      }
+    OUTPUT: {Color: Red       , number1/   3, http://8080, float: -45.6}
 apply-test
     INPUT:  {Color :'general | idx3 /3:'money | num2 /N2:<'general | pi /system/words/pi:<'fixed | /(1 + 1) /now/time}
     VALUE:  [ "Red" n2 2 3 n4 -45.6 ]
