@@ -574,7 +574,7 @@ Examples:
 > Extended FORM for numbers, lets you control E notation and rounding
 
 The model used in this function gives you greater control in some ways, but
-less in others. By default, it works just like `form`, but give you the ability
+less in others. By default, it works just like `form`, but gives you the ability
 to round, so you don't have to do that separately. It doesn't give you any way
 to include group separators, but that can be done with `form-num-with-group-seps`
 that can operate on preformed numbers. It also has no concept of masks, extra
@@ -1327,9 +1327,21 @@ apply-test
     VALUE:  ["Red" 2 3 -45.6]
     OUTPUT: "Color: Red        number1   2 number2 00003 xxx"
 apply-test
-    INPUT:  [Color: (:< 10) number1 (/3) number2 () xxx]
+    INPUT:  [Color: (:< 10) number1 (/3) number2 (:z "xxx") xxx]    ; invalid spec
     VALUE:  ["Red" 2 3 -45.6]
-    OUTPUT: "Color: Red        number1 3 number2 Red xxx"
+    OUTPUT: none
+apply-test
+    INPUT:  [Color: (:< 10) number1 (/3) number2 (:z /5) xxx]       ; invalid spec
+    VALUE:  ["Red" 2 3 -45.6]
+    OUTPUT: none
+apply-test
+    INPUT:  [Color: (:< 10) number1 (/3) number2 (/5 :z)]
+    VALUE:  ["Red" 2 3 -45.6]
+    OUTPUT: "Color: Red        number1 -45.6 number2 "
+apply-test
+    INPUT:  [Color (:< 10) number1 (/3) number2 (/5 :z) float (:< 5 2) . newline]
+    VALUE:  ["Red" 2 3 -45.6]
+    OUTPUT: {Color Red        number1 -45.6 number2  float 2.0   . newline}
 apply-test
     INPUT:  [Color (col-1) | idx3 (/3 acct) | num2 (/N2 :< general) | pi (system/words/pi :< fixed) | ((1 + 1)) (now/time)]
     VALUE:  ["Red" n2 2 3 n4 -45.6]
