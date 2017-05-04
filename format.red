@@ -533,7 +533,7 @@ formatting: context [
 		
 	set 'format-bytes function [
 		"Return a string containing the size and unit suffix, auto-scaled"
-		size [number!]
+		size [integer! float!]
 		/to scale "Rounding precision; default is 1"
 		/as unit [word!] "units: [bytes KiB MiB GiB TiB PiB EiB ZiB YiB]"
 		/sep  ch [char! string!] "Separator to use between number and unit"
@@ -549,7 +549,7 @@ formatting: context [
 			[1024.0 [bytes KiB MiB GiB TiB PiB EiB ZiB YiB]]
 		]
 		either unit [
-			if not find units unit [
+			if not find units unit [	;?? Default to 'bytes to avoid error?
 				return make error! rejoin [mold unit " is not a valid unit for format-bytes"]
 			]
 			; Convert unit to a scaled power based on the offset in the list of units. 
@@ -954,7 +954,8 @@ formatting: context [
 			;r-currency [add-seps/with to money! n r-sep]                ; $#'##0.00
 			;r-money    [add-seps/with to money! n r-sep]                ; $#'##0.00
 			r-money
-			r-currency [add-seps/with format-number-with-mask round/to n .01 "$#,##0.00" r-sep] ; $#'##0.00  -$#'##0.00
+			r-currency [format-number-with-mask round/to n .01 "$#'###'###'###'##0.00"] ; $#'##0.00  -$#'##0.00
+			;r-currency [add-seps/with round/to n .01 r-sep] ; $#'##0.00  -$#'##0.00
 			r-percent  [add-seps/with format-number-by-width to percent! n 1 2 r-sep]			; format-number-by-width auto handles percent
 			r-ordinal  [add-seps/with as-ordinal to integer! n r-sep]
 			r-hex      [to-hex to integer! n]
@@ -965,7 +966,8 @@ formatting: context [
 			;currency [add-seps to money! n] ; $#,##0.00
 			;money    [add-seps to money! n] ; $#,##0.00
 			money
-			currency [add-seps format-number-with-mask round/to n .01 "$#,##0.00"] ; $#,##0.00
+			currency [format-number-with-mask round/to n .01 "$#,###,###,###,##0.00"] ; $#,##0.00
+			;currency [add-seps round/to n .01] ; $#,##0.00
 			percent  [add-seps format-number-by-width to percent! n 1 2]
 			;percent  [join add-seps next form to money! value * 100 #"%"]
 			sci  scientific  [form-num-ex/type n 'sci]
@@ -1211,22 +1213,49 @@ set 'format-value func [
 	]
 ]
 
+
+;[number! not 'bytes]						format-number
+;[number! 'bytes]							format-bytes
+;[logic! *]									format-logic
+;[parse-as-composite string!] 				composite
+;[parse-as-short-format string! any-type!] 	short-form 
+;[parse-as-block-format block!  any-type!] 	block-form 
+;[any-string! *]							format-string
+;[[date! time!] *]							format-date-time
+;else
+
+multi-format?: func [fmt][
+	case [
+		string? fmt [all [find fmt #";"  4 >= length? split fmt #";"]]
+	]	
+]
+
 ; Interpolation funcs are not handled here, because arg order is reversed.
 set 'format function [
 	value [any-type!]
 	fmt   [word! string! block! function! object! map!] "Named or custom format"
 ][
-	type: type?/word value
+	type: type?/word :value
 	;print ['xxx type mold value mold :fmt]
+	
+	if multi-format? fmt [
+		fmt: select-format fmt value
+	]
+	
 	case [
 		none? :value []	; dispatch based on fmt
-		all [number? :value  fmt <> 'bytes] [format-number value fmt] ; decimal! money!
-		all [number? :value  fmt  = 'bytes] [format-bytes value fmt]
+		all [number? :value  :fmt <> 'bytes] [format-number value :fmt] ; decimal! money!
+		all [number? :value  :fmt  = 'bytes] [format-bytes value :fmt]
+
 		;find [date! time!] type [format-date-time value fmt]
-		logic? :value      [format-logic  value fmt]
+
+		logic? :value      [format-logic value :fmt]
 		
 		any-string? :value [format-string value fmt]
-		block? :value      []
+		
+		; interpolation (doubtful we'll keep this here)
+		all [block?  :value  parse-as-block-format :value] [block-form value fmt]
+		all [string? :value  parse-as-short-format :value] [short-form value fmt]
 	]
 ]
 

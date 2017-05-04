@@ -254,21 +254,21 @@ with formatting [
 			format-number-with-style 0 'eng
 			format-number-with-style 0 'accounting
 
-			format-number-with-style 12345.678 'r-general
-			format-number-with-style 12345.678 'r-standard
-			format-number-with-style 12345.678 'r-fixed
-			format-number-with-style 12345.678 'r-currency
-			format-number-with-style 12345.678 'r-money
-			format-number-with-style 12345.678 'r-percent
-			format-number-with-style 12345.678 'r-ordinal
+			format-number-with-style 1234543.678 'r-general
+			format-number-with-style 1234543.678 'r-standard
+			format-number-with-style 1234543.678 'r-fixed
+			format-number-with-style 1234543.678 'r-currency
+			format-number-with-style 1234543.678 'r-money
+			format-number-with-style 1234543.678 'r-percent
+			format-number-with-style 1234543.678 'r-ordinal
 
-			format-number-with-style 12345.678 'general
-			format-number-with-style 12345.678 'standard
-			format-number-with-style 12345.678 'fixed
-			format-number-with-style 12345.678 'currency
-			format-number-with-style 12345.678 'money
-			format-number-with-style 12345.678 'percent
-			format-number-with-style 12345.678 'ordinal
+			format-number-with-style 1234543.678 'general
+			format-number-with-style 1234543.678 'standard
+			format-number-with-style 1234543.678 'fixed
+			format-number-with-style 1234543.678 'currency
+			format-number-with-style 1234543.678 'money
+			format-number-with-style 1234543.678 'percent
+			format-number-with-style 1234543.678 'ordinal
 
 			format-number-with-style 32767 'hex
 			format-number-with-style 32767 'min-hex
@@ -280,19 +280,19 @@ with formatting [
 			format-number-with-style 12345.678 'eng
 			format-number-with-style 12345.678 'accounting
 
-			format-number-with-style -12345.678 'r-general
-			format-number-with-style -12345.678 'r-standard
-			format-number-with-style -12345.678 'r-fixed
-			format-number-with-style -12345.678 'r-currency
-			format-number-with-style -12345.678 'r-money
-			format-number-with-style -12345.678 'r-percent
+			format-number-with-style -1234543.678 'r-general
+			format-number-with-style -1234543.678 'r-standard
+			format-number-with-style -1234543.678 'r-fixed
+			format-number-with-style -1234543.678 'r-currency
+			format-number-with-style -1234543.678 'r-money
+			format-number-with-style -1234543.678 'r-percent
 
-			format-number-with-style -12345.678 'general
-			format-number-with-style -12345.678 'standard
-			format-number-with-style -12345.678 'fixed
-			format-number-with-style -12345.678 'currency
-			format-number-with-style -12345.678 'money
-			format-number-with-style -12345.678 'percent
+			format-number-with-style -1234543.678 'general
+			format-number-with-style -1234543.678 'standard
+			format-number-with-style -1234543.678 'fixed
+			format-number-with-style -1234543.678 'currency
+			format-number-with-style -1234543.678 'money
+			format-number-with-style -1234543.678 'percent
 
 			format-number-with-style -12345.678 'hex
 			format-number-with-style -12345.678 'min-hex
