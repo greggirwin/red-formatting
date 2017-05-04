@@ -144,13 +144,15 @@ string-formatting: context [
 	]
 
 	fill: function [
+		"Fill part of a template string with a formed value"
 		str [any-string!] "Template string"
 		align [word!] "[left center right]"
 		val "(formed) Value to insert in template string"
 		;/trunc "Truncate val if longer than str" ;?? make ellipsis last char if truncated?
 	][
 		str: copy str							; Don't modify template string
-		if not any-string? val [val: form val]	; Prep the value
+		;if not any-string? val [val: form val]	; Prep the value
+		val: form val							; Prep val; always copy as we may return it
 		diff: (length? str) - (length? val)		; Find the length difference between them
 		if not positive? diff [return val]		; Never truncate the formed value
 		pos: switch/default align [
