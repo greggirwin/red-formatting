@@ -108,23 +108,26 @@ Wolfram is an important system to learn from. On the other hand, C
 (and `printf`) herald from a system level view, which I think holds 
 less value in Red. For example, `printf` has no concept of group
 separators in numbers. Those are helpful, even for programmers. Why
-would you *not* include them?
+would you *not* include them? One reason is `load`ability. Red is a
+data language, and the ability to round-trip values should not be
+overlooked.
 
 There is the issue of internationalization. We can format the data
 for ourselves, but someone else may be looking at it in another part
 of the world, and ambiguity can be a terrible thing. Leaving out
 group separators doesn't solve the problem, because the decimal 
 point may still be a dot/full-stop or a comma. What we need, then,
-is a universal numeric format that is unambiguous. We can also call
-this a "round-trip" form and is, coincidentally, natively supported
-by Red.
+is a universal numeric format that is unambiguous. This, again, is
+a "round-trip" form and is, coincidentally, natively supported by
+Red. We should also consider the most common case when sharing 
+technical data, in which the nationality is mathematics.
 
 We can't force people to do the right thing. All we can do is make
 the right thing really easy to do, and discourage bad behavior.
 As you read the notes here, or evaluate the draft code, keep that
 in mind. The goal is not to be all things to all people, or to 
-support existing formats because blub programmers will be happy to
-see it and may adopt Red (they won't). 
+support existing formats because `language-x` programmers will be
+happy to see it and may adopt Red (they won't). 
 
 == General dialect thoughts.
 
@@ -466,6 +469,10 @@ Examples:
 
 > Format a logic value as a string, custom or named format
 
+We have alternate lexical forms for logic values, but no standard way to create
+them. Form-logic returns a string, while mold-logic returns a word and doesn't
+support custom formats. Useful in code generators.
+
 Spec:
 ....
     form-logic
@@ -478,10 +485,6 @@ Spec:
         /on-off
         /yes-no
 ....
-
-We have alternate lexical forms for logic values, but no standard way to create
-them. Form-logic returns a string, while mold-logic returns a word and doesn't
-support custom formats. Useful in code generators.
 
 Examples:
 ....
@@ -586,9 +589,9 @@ if the `acct` type is used.
 ....
     Type    Meaning
     gen     General form, default, same as `form`
-    sci     Scientific form. always 1 digit left of the decimal point.
-    eng     Engineering form; 1-3 digits left of decimal, with an exponent
-            that is always a multiple of 3.
+    sci     Scientific form. Always 1 digit left of the decimal point.
+    eng     Engineering form; 1-3 digits left of the decimal point, with
+            an exponent that is always a multiple of 3.
     acct    Never use E notation. Use paretheses around negative numbers.
             Currently, there are still limits (1e16/9e-15), because we're
             not doing this down at the metal. We're just tricking Red's
@@ -611,7 +614,7 @@ at 8 places, you could use this function:
 Spec:
 ....
     n [number!]
-    /type t [word! function!] "[gen sci eng acct] Default is gen, or custom exponent function"
+    /type t [word! function!] "[gen sci eng acct] or custom exponent function; default is 'gen"
     /to scale [number!] "Rounding scale (must be positive)"
 ....
 
@@ -1233,12 +1236,6 @@ Here's one example of a `short-format` string converted to use the `composite` s
 
 > Format and substitute values into a template block
 
-Spec:
-....
-    input [block!] "Template block containing `(/value:format)` fields and literal data"
-    data "Value(s) to apply to template fields"
-....
-
 Everything about short-format applies here, except that the input is a block,
 and fields don't start with a `/` sigil. Instead, `paren!` values are used for
 fields, and the format inside them based on Red values, not string parsing.
@@ -1251,6 +1248,11 @@ are `([refinement! | path! | paren!] get-word! integer! integer! word!)`.
 The only special handling is that refinements are coerced to integer! or
 word! values and flags are coerced to a string.
 
+Spec:
+....
+    input [block!] "Template block containing `(/value:format)` fields and literal data"
+    data "Value(s) to apply to template fields"
+....
 
 Examples:
 ....
