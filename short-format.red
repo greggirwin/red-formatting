@@ -1,7 +1,7 @@
 ﻿Red []
 
 short-format-ctx: none
-do %format.red
+if not value? 'apply-format-style [do %format.red]
 
 short-format-ctx: context [
 
@@ -42,7 +42,9 @@ short-format-ctx: context [
 		none
 			
 	digit=:     charset "0123456789"
-	flag-char=: charset "_+0<>Zzº$¤"			; º=186=ordinal  ¤=164=currency
+	flag-char=: charset "_+0<>Zzº$¤"			; º=186=ordinal  ª=170=ordinal  ¤=164=currency
+												; Could add ª ordinal support, which is easy here, but adds
+												; more every place we have to check for it as a flag.
 	key-sigil=: #"/"
 	fmt-sigil=: #":"	; _=&@!
 	sty-sigil=: #"'"
@@ -80,7 +82,8 @@ short-format-ctx: context [
 		(=flags: =width: =prec: =key: =style: none)
 		[key= opt fmt= | fmt=] (
 			;if find =flags #"º" [=style: quote 'ordinal]
-			if find =flags charset "$¤" [=style: quote 'money]
+			;?? If there is a ' following the currency flag, should we use r-money?
+			if find =flags charset "$¤" [=style: quote 'money]	; quote because we compose it in below
 			append/only =parts make format-proto compose [
 				key: :=key flags: (=flags) width: (=width) prec: (=prec) style: (=style)
 			]
