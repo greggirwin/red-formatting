@@ -153,7 +153,7 @@ string-formatting: context [
 		str: copy str							; Don't modify template string
 		;if not any-string? val [val: form val]	; Prep the value
 		val: form val							; Prep val; always copy as we may return it
-		diff: (length? str) - (length? val)		; Find the length difference between them
+		diff: (length? str) - (length? val)		; How much longer is the template than the value
 		if not positive? diff [return val]		; Never truncate the formed value
 		pos: switch/default align [
 			left   [1]
@@ -218,10 +218,11 @@ string-formatting: context [
 		][
 			; custom format
 			either block? fmt [
-				use [
-					align= wd= fill= rules 
-					=align =wd =fill  mod res
-				][
+				context [
+					align=: wd=: fill=:  rules:
+					=align: =wd: =fill:  mod: res:
+						none
+
 					align=: [opt 'align set =align ['left | 'center | 'right]] ;  opt 'align set =align
 					; 'size or 'pad  keywods for width?
 					wd=:    [opt ['width | 'wd] set =wd integer! (if negative? =wd [=wd: abs =wd  align: 'right])]
@@ -408,7 +409,7 @@ capitalization-ctx: context [
 			change/part w-start new-wd w-end 
 		]
 		
-		parse/all string [
+		parse string [
 			some [
 				w-start: word= w-end: (
 					if show [print [=word index? w-start index? w-end]]
@@ -450,7 +451,7 @@ capitalization-ctx: context [
 
 		; This does NOT strip leading digits from the word.        
 		if camel [
-			parse/all string [
+			parse string [
 				some [
 					mark: ch-non-word= (mark: remove mark) :mark
 					| skip
