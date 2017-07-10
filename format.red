@@ -805,7 +805,7 @@ formatting: context [
 
 		; Convert number to string, removing standard type decorations,
 		; then split it at the decimal mark.
-		;!! We no NOT round when formatting. That's up to the caller.
+		;!! We do NOT round when formatting. That's up to the caller.
 		;!! We always break at #"." against a FORMed number, as Red
 		;   will always use that as the default decimal separtaor.
 		;!! Merge-number-mask can't handle E notation numbers, so we'll
@@ -864,8 +864,8 @@ formatting: context [
 	; 'via instead of 'with to make it clearer that this is different, for now.
 	set 'format-number-via-masks function [
 		"Return a formatted number, selecting a mask as a template based on the number's value"
-		n [number!]
-		masks [string! block! map!] "Masks appplied based on the sign or special value of n"
+		value [number!]
+		fmts [string! block! map!] "Masks appplied based on the sign or special value of n"
 	][
 		; custom format
 		either any-string? fmt [
@@ -1002,8 +1002,8 @@ formatting: context [
 		]
 	]
 
-	; The printf model of total.deci lengths is unintuitive to me. It seems more
-	; natural to use whole.deci. The question is how much "discussion" that
+	; The printf model of <total>.<deci> lengths is unintuitive to me. It seems more
+	; natural to use <whole>.<deci>. The question is how much "discussion" that
 	; will cause. 
 	set 'format-number-by-width function [
 		"Formats a number given a total length and a maximum number of decimal digits. No separators added."
@@ -1122,6 +1122,7 @@ block-format-ctx: context [
 		(=flags: =width: =prec: =key: =style: none)
 		[key= opt fmt= | fmt=] (
 			;if find =flags #"º" [=style: quote 'ordinal]
+			;?? If there is a ' following the currency flag, should we use r-money?
 			if find =flags charset "$¤" [=style: quote 'money]
 			append/only =parts make format-proto compose [
 				key: :=key flags: (=flags) width: (=width) prec: (=prec) style: =style
@@ -1147,10 +1148,10 @@ block-format-ctx: context [
 	;---------------------------------------------------------------------------
 
 	with: func [
-		object [object! none!]
-		body   [block!]
+		obj  [object! none!]
+		body [block!]
 	][
-		if object [do bind/copy body object]
+		if obj [do bind/copy body obj]
 	]
 
 	set 'parse-as-block-format func [
@@ -1169,7 +1170,7 @@ block-format-ctx: context [
 
 		set 'block-form function [
 			"Format and substitute values into a template block"
-			input [block!] "Template block containing `(/value:format)` fields and literal data"
+			input [block!] "Template block containing (/value:format) fields and literal data"
 			data   "Value(s) to apply to template fields"
 			/only  "Return as block, instead of string"
 			/tight "Don't put spaces between elements"
@@ -1207,7 +1208,7 @@ set 'format-value func [
 	case [
 		; not sure what to do with NONE values.
 		find [integer! float! percent! none!] type [format-number value fmt] ; decimal! money! 
-		find [time!] type [format-date-time value fmt] ; date!
+;		find [time!] type [format-date-time value fmt] ; date!
 		type = 'logic!          [format-logic  value fmt]
 		any-string? value       [format-string value fmt]
 	]
@@ -1229,6 +1230,8 @@ multi-format?: func [fmt][
 		string? fmt [all [find fmt #";"  4 >= length? split fmt #";"]]
 	]	
 ]
+
+select-format: func [fmts value][]
 
 ; Interpolation funcs are not handled here, because arg order is reversed.
 set 'format function [
@@ -1263,22 +1266,22 @@ set 'format function [
 ; formatted values, the caller can choose to rejoin, reform, delimit, etc.
 ; We also need to make sure we add value over what PRINT does by default.
 
-set 'reformat func [input [block!]] [
-	reform collect item [
-		foreach val input [
-			item: either block? :val [format val/1 val/2] [form val]
-		]
-	]
-]
-
-set 'reformat-b func [data [block!] template [block!] /local res] [
-	reform collect item [
-		foreach val template [
-			item: either all [block? :val not empty? val] [
-				res: format data/1 val/1
-				data: next data
-				res
-			] [form val]
-		]
-	]
-]
+;set 'reformat func [input [block!]] [
+;	reform collect item [
+;		foreach val input [
+;			item: either block? :val [format val/1 val/2] [form val]
+;		]
+;	]
+;]
+;
+;set 'reformat-b func [data [block!] template [block!] /local res] [
+;	reform collect item [
+;		foreach val template [
+;			item: either all [block? :val not empty? val] [
+;				res: format data/1 val/1
+;				data: next data
+;				res
+;			] [form val]
+;		]
+;	]
+;]
