@@ -173,26 +173,26 @@ with formatting [
 			format-bytes/SI/to/as/sep 1500 .1 'bytes #"_"
 			
 		]
-		format-logic [
-			format-logic true  'true-false
-			format-logic false 'true-false
-			format-logic true  'on-off
-			format-logic false 'on-off
-			format-logic true  'yes-no
-			format-logic false 'yes-no
-			format-logic true  'TF
-			format-logic false 'TF
-			format-logic true  'YN
-			format-logic false 'YN
-			format-logic true  "+-"
-			format-logic false "+-"
-			format-logic true  [.t .f]
-			format-logic false [.t .f]
-			format-logic true  ""
-			format-logic false ""
-			format-logic true  []
-			format-logic false []
-			format-logic true  'xyz
+		form-logic [
+			form-logic true  'true-false
+			form-logic false 'true-false
+			form-logic true  'on-off
+			form-logic false 'on-off
+			form-logic true  'yes-no
+			form-logic false 'yes-no
+			form-logic true  'TF
+			form-logic false 'TF
+			form-logic true  'YN
+			form-logic false 'YN
+			form-logic true  "+-"
+			form-logic false "+-"
+			form-logic true  [.t .f]
+			form-logic false [.t .f]
+			form-logic true  ""
+			form-logic false ""
+			form-logic true  []
+			form-logic false []
+			form-logic true  'xyz
 		]
 		merge-number-mask [
 			; Remember when testing this to reverse the strings being merged.
@@ -482,7 +482,7 @@ with formatting [
 	print mold reduce tests/pad-aligned
 	print mold reduce tests/sign-chars
 	print mold reduce tests/format-bytes
-	print mold reduce tests/format-logic
+	print mold reduce tests/form-logic
 	print mold reduce tests/merge-number-mask
 	print mold reduce tests/format-number-with-style
 	print mold reduce tests/format-number-by-width

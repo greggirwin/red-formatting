@@ -275,7 +275,7 @@ respectively.
     fill                     Minor  Efficiently fill a template string with a formed value (maybe Private)
     form-num-with-group-seps Minor  Insert group separators into a numeric string
     form-num-ex              Major  Extended FORM for numbers, lets you control E notation and rounding
-    format-by-width          Minor  Formats a number given a total length and a maximum number of decimal digits. No separators added.
+    format-number-by-width   Minor  Formats a number given a total length and a maximum number of decimal digits. No separators added.
     format-number-with-mask  Minor  Return a formatted number, using a mask as a template
     format-number-via-masks  Minor  Format, selecting the mask based on the number's value
     format-number-with-style Minor  Return a formatted number, by named style
@@ -308,7 +308,7 @@ We want a word that says it operates on a single argument, so things like
 `intersperse`, `substitute`, and `interject` don't read as well to me. It sounds
 like they take something(s) to insert. `Inset` is too close to `insert`. Another
 option is a neologism, like `interform`, which implies both putting a thing in a
-place, and `form`ing it. `Composite` is generally used as a term related to
+place, and forming it. `Composite` is generally used as a term related to
 image processing, which is a possible point of confusion. It is also both a noun
 and a verb, which works well in this case.
 
@@ -356,20 +356,20 @@ Composite
     "):"                    == "):"
     ")::("                  == ")::("
 
-	"alpha: :(rejoin ['a 'b]): answer: :(42 / 3):" == "alpha: ab answer: 14"
+    "alpha: :(rejoin ['a 'b]): answer: :(42 / 3):" == "alpha: ab answer: 14"
 
     ; No sample data to go with this in the doc
-	{
-		name: :(form-full-name cust):
-		rank: :(as-ordinal index? find scores cust):
-		ser#: :(cust/uuid):
-	}
+    {
+        name: :(form-full-name cust):
+        rank: :(as-ordinal index? find scores cust):
+        ser#: :(cust/uuid):
+    }
 
     ; With spaces around the expressions
-	"a :('--): b"           == "a -- b"                                             
-	"a :('--):"             == "a --"                                                 
-	":('--): b"             == "-- b"                                                 
-	"ax :(1 / 0): xb"       == "ax  *** Error: zero-divide Where: 1 / 0 ***  xb"
+    "a :('--): b"           == "a -- b"                                             
+    "a :('--):"             == "a --"                                                 
+    ":('--): b"             == "-- b"                                                 
+    "ax :(1 / 0): xb"       == "ax  *** Error: zero-divide Where: 1 / 0 ***  xb"
 
 Composite/err-val input "#ERR"
 
@@ -471,7 +471,8 @@ Examples:
 
 We have alternate lexical forms for logic values, but no standard way to create
 them. Form-logic returns a string, while mold-logic returns a word and doesn't
-support custom formats. Useful in code generators.
+support custom formats (MOLDed results should be LOADable). Useful in code
+generators.
 
 Spec:
 ....
@@ -488,17 +489,17 @@ Spec:
 
 Examples:
 ....
-    >> format-logic true 'on-off
+    >> form-logic true 'on-off
     == "On"
-    >> format-logic true 'yes-no
+    >> form-logic true 'yes-no
     == "Yes"
-    >> format-logic true 'TF
+    >> form-logic true 'TF
     == "T"
-    >> format-logic true 'YN
+    >> form-logic true 'YN
     == "Y"
-    >> format-logic true [Yeah! No-way!]
+    >> form-logic true [Yeah! No-way!]
     == "Yeah!"
-    >> format-logic false [Yeah! No-way!]
+    >> form-logic false [Yeah! No-way!]
     == "No-way!"
     >> mold-logic true 'on-off
     == on-off
@@ -586,6 +587,11 @@ text, or padding/alignment. What it *does* give you is the ability to select
 scientific notation kicks in, and formats negative numbers in a standard way
 if the `acct` type is used.
 
+The abbreviated format style names are a compromise between single letters
+used in some system, and full words, which would be quite long in this case.
+Single letters aren't clear, where `E` would make sense for scientific notation,
+but might be confused with "E" for Engineering.
+
 ....
     Type    Meaning
     gen     General form, default, same as `form`
@@ -654,7 +660,7 @@ Examples:
 ....
 
 
-== format-by-width
+== format-number-by-width
 
 > Formats a number given a total length and a maximum number of decimal digits.
 
@@ -862,14 +868,14 @@ Examples:
 
 > Format, selecting the mask based on the number's value
 
-This concept is taken from the world of spreadsheets. Rather than you manually
-select a mask by looking at a number's value, you give the system options for
-each case you want to handle. Normally `<POSITIVE>;<NEGATIVE>;<ZERO>;<TEXT>`.
-In my R2 system, I also allowed blocks with named selectors, which I plan to 
-extend in the Red system to support functions as tests, which will let the
-system handle special values like `1.#INF` and `1.#NaN`. Another likely 
-extension is the ability to use short-format specifications and named styles
-for each section or test.
+This concept is taken from the world of spreadsheets. Rather than making you
+manually select a mask by looking at a number's value, you give the system
+options for each case you want to handle. Normally
+`<POSITIVE>;<NEGATIVE>;<ZERO>;<TEXT>`. In my R2 system, I also allowed blocks
+with named selectors, which I plan to extend in the Red system to support
+functions as tests, which will let the system handle special values like
+`1.#INF` and `1.#NaN`. Another likely extension is the ability to use short-
+format specifications and named styles for each section or test.
 
 Spec:
 ....
@@ -903,7 +909,7 @@ to be created and used directly.
     r-ordinal
     r-hex   
             
-    general         Comma as group sep
+    gen general     Comma as group sep
     standard
     fixed   
     money   
@@ -1163,7 +1169,7 @@ apply-test
 apply-test
     INPUT:  ":/pi"
     VALUE:  123.456
-    OUTPUT: "123.4563.141592653589793"
+    OUTPUT: "123.4563.141592653589793"  ; Note the leading colon, which consumes the value
 apply-test
     INPUT:  "/system/words/pi"
     VALUE:  123.456
@@ -1245,8 +1251,8 @@ you two datatypes that are escaped as formatting fields in your block.
 
 The order is still `(key flags width prec style)`] and the types supported 
 are `([refinement! | path! | paren!] get-word! integer! integer! word!)`.
-The only special handling is that refinements are coerced to integer! or
-word! values and flags are coerced to a string.
+The only special handling is that refinements are coerced to `integer!` or
+`word!` values and flags are coerced to a string.
 
 Spec:
 ....

@@ -151,7 +151,7 @@ formatting: context [
 		"Insert group separators into a numeric string"
 		num [number! any-string!]
 		/with sep [string! char!]
-		/every ct [integer!]
+		/every ct [integer!]					; /skip may be a better name, but conflicts with system/words/skip
 	][
 		num: form num							; Form strings, too, so they're not modified
 		sep: any [sep #","]
@@ -569,7 +569,7 @@ formatting: context [
 	; func? Really, it could support any value that can be converted to logic, but
 	; is that more helpful to the user, or will it make things more confusing for
 	; values like "" that convert to TRUE?
-	set 'format-logic function [
+	set 'form-logic function [
 		"Format a logic value as a string"
 		value [logic!] "If a custom format is used, fmt/1 is for true, fmt/2 for false"
 		fmt   [word! string! block!] "Custom format, or one of [true-false on-off yes-no TF YN]"
@@ -960,8 +960,7 @@ formatting: context [
 			r-ordinal  [add-seps/with as-ordinal to integer! n r-sep]
 			r-hex      [to-hex to integer! n]
 
-			general
-			standard [add-seps n]	; #,##0.0#
+			gen general standard [add-seps n]	; #,##0.0#
 			fixed    [add-seps format-number-by-width n 1 2]          ; #,##0.00
 			;currency [add-seps to money! n] ; $#,##0.00
 			;money    [add-seps to money! n] ; $#,##0.00
