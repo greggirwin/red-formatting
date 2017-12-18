@@ -184,7 +184,12 @@ date-time-formatting: context [
 			]
 		]
 		month-qtr: func [month [integer!]] [to integer! month - 1 / 3 + 1]
-
+		zone: func [z [date! time!] /with sep [char! string!]][
+			if date? z [z: z/zone]
+			rejoin [
+				(pick "-+" negative? z) (pad-num absolute z/hour 2) (any [sep ""]) (pad-num z/minute 2)
+			]
+		]
 		rfc-3339-fmt: func [value /local t] [
 			t: get-time value
 			; If the time includes fractional seconds, include them in
@@ -274,8 +279,8 @@ date-time-formatting: context [
 					| "yyyy" (emit d/year)
 					| "yy"   (emit at form d/year 3)
 					| "y"    (emit d/julian) 						;?? yd ytd
-					| opt #"±" "zz:zz" (if t: value/zone [emit rejoin [pick ["-" "+"] negative? t  pad-num absolute t/hour 2 ":" pad-num t/minute 2]])
-					| opt #"±" "zzzz"  (if t: value/zone [emit rejoin [pick ["-" "+"] negative? t  pad-num absolute t/hour 2 pad-num t/minute 2]])
+					| opt #"±" "zz:zz" (emit zone/with value #":")
+					| opt #"±" "zzzz"  (emit zone value)
 				]
 			]
 			set 'format-date-time-via-mask func [
