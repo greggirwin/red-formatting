@@ -11,6 +11,15 @@ if not value? 'as-ordinal [
 
 date-time-formatting: context [
 
+	as-utc: func [date [date!]] [
+	    if all [date/zone  0:00 <> date/zone] [
+	        date: date - date/zone
+	    ]
+	    date/zone: 0:00
+	    if none? date/time [date/time: 0:0:0]
+	    date
+	]
+
 	pad-num: func [num [integer! float!] wd [integer!]][
 		pad/with/left form num wd #"0"
 	]
@@ -336,14 +345,14 @@ date-time-formatting: context [
 					either none? value/time [
 						format-date-time value "yyyymmdd"
 					][
-						format-date-time value join "yyyymmdd\Thhhmmss" either 0:00 = value/zone ["\Z"] ["zzzz"]
+						format-date-time value join "yyyymmdd^^Thhhmmss" either 0:00 = value/zone ["^^Z"] ["zzzz"]
 					]
 				]
 				ISO-8601 [ ; ISO8601 with separators
 					either none? value/time [
 						format-date-time value "yyyy-mm-dd"
 					][
-						format-date-time value join "yyyy-mm-dd\Thhh:mm:ss" either 0:00 = value/zone ["\Z"] ["zzzz"]
+						format-date-time value join "yyyy-mm-dd^^Thhh:mm:ss" either 0:00 = value/zone ["^^Z"] ["zzzz"]
 					]
 				]
 				
@@ -363,17 +372,19 @@ date-time-formatting: context [
 					format-date-time value "ddd-en, dd mmm-en yyyy hhh:mm:ss zzzz"
 				]
 
-				; Must be in UTC            
+				; Must be in UTC
+				; HTTP-date is case sensitive and MUST NOT include additional
+				; LWS beyond that specifically included as SP in the grammar.
 				; Per https://tools.ietf.org/html/rfc2616#section-3.3.1
 				;	HTTP-date    = rfc1123-date | rfc850-date | asctime-date
 				;	rfc1123-date = wkday "," SP date1 SP time SP "GMT"
 				;	rfc850-date  = weekday "," SP date2 SP time SP "GMT"
 				;	asctime-date = wkday SP date3 SP time SP 4DIGIT				
-				;HTTP-Cookie [format-date-time value "ddd, dd mmm yyyy hhh:mm:ss zzzz"]
-				HTTP-Cookie [format-date-time value "dddd-en, dd mmm-en yyyy hhh:mm:ss zzzz"]
-				RFC850 USENET [format-date-time value "dddd-en, dd mmm-en yy hhh:mm:ss zzzz"]
+				;HTTP-Cookie [format-date-time value "ddd, dd mmm yyyy hhh:mm:ss GMT"]
+				HTTP-Cookie [format-date-time as-utc value "dddd-en, dd mmm-en yyyy hhh:mm:ss ^^G^^M^^T"]
+				RFC850 USENET [format-date-time as-utc value "dddd-en, dd mmm-en yy hhh:mm:ss ^^G^^M^^T"]
 				; http://www.ietf.org/rfc/rfc1036.txt  §2.1.2
-				RFC1036     [format-date-time value "ddd-en, dd mmm-en yy hhh:mm:ss zzzz"]
+				RFC1036     [format-date-time as-utc value "ddd-en, dd mmm-en yy hhh:mm:ss zzzz"]
 				
 				; throw error - unknown named format specified?
 			] [either any-block? value [form reduce value] [form value]]
