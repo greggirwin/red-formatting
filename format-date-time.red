@@ -5,6 +5,9 @@ Red []
 ;if not value? 'format-number-by-width [
 ;	do %format.red
 ;]
+if not value? 'as-ordinal [
+	do %format.red
+]
 
 date-time-formatting: context [
 
@@ -133,9 +136,12 @@ date-time-formatting: context [
 		fmt   [word! string!] "Named or custom format"
 		/local d t tt res get-time local-date std-time year-week month-qtr rfc-3339-fmt was-time?
 	] [
-		; If we only got a time, assume the current date.
+		; If we only got a time, assume the current date. But also set a flag so
+		; we can determine later if we got a time! value as an argument. That way
+		; most logic can safely assume a full date arg, but special handling can
+		; also be used.
 		if time? value [
-			was-time?: yes
+			was-time?: yes					; so we can check later if the input arg was time!
 			d: now
 			d/time: value
 			value: d
@@ -168,7 +174,7 @@ date-time-formatting: context [
 		]
 		year-week: func [date /local year new-year day-num offset][
 			year: date/year
-			new-year: to-date join "1-Jan-" year
+			new-year: make date! reduce [1 1 year] ; to-date join "1-Jan-" year
 			day-num: date - new-year + 1
 			offset: new-year/weekday - 1
 			either not zero? remainder (day-num + offset) 7 [
@@ -191,12 +197,14 @@ date-time-formatting: context [
 		]
 
 		date-time-mask-formatting: context [
+			res: none
+			emit: func [val] [append res val]
+
 			any-char: complement charset ""
 			pass-char: charset " ^-^/,.'"		; space tab newline , . '
 			escape: ["^^" | "\"]
 			time-sep: ":"   					; Should this be customizable?
 			date-sep: "-"   					; Should this be customizable?
-			emit: func [val] [append res val]
 			; English versions, for RFC822+
 			en-day-name: func [index] [pick en-days index]
 			en-day-abbr: func [index] [pick en-days-abbr index]
@@ -214,18 +222,19 @@ date-time-formatting: context [
 					| escape copy ch any-char (emit ch)
 					| ":" (emit time-sep)
 					| copy ch ["-" | "/"] (emit ch) ;(emit date-sep)
-					| "c" (emit format-date-time value "ddddd ttttt") ; c = "C"omplete
-					| "dddddd" (emit format-date-time value 'long-date)
-					| "ddddd" (emit format-date-time value 'short-date)
+					;| "c" (emit format-date-time value "ddddd ttttt")	; c = "C"omplete
+					| "c" (emit format-date-time value "dd/mm/yyyy hh:mm:ssAM/PM")	; c = "C"omplete
+					| "dddddd" (emit format-date-time value "dddd, mmmm dd, yyyy")
+					| "ddddd" (emit format-date-time value "dd/mm/yyyy")
 					;!! Note that we have *-en versions for RFC format use
-					| ["dddd-en" | "monday-en"] (emit en-day-name d/weekday)
-					| ["ddd-en" | "mon-en"] (emit en-day-abbr d/weekday)
-					| ["dddd" | "monday"] (emit day-name d/weekday)
-					| ["ddd" | "mon"] (emit copy/part day-name d/weekday 3)
-					| "dd" (emit pad-num d/day 2)	; TBD allow 2 digit chars?
-					| "d"  (emit d/day)				; TBD allow 1 digit char?
+					| ["dddd-en" | "monday-en" | "Monday-en"] (emit en-day-name d/weekday)
+					| ["ddd-en" | "mon-en" | "Mon-en"] (emit en-day-abbr d/weekday)
+					| ["dddd" | "monday" | "Monday"] (emit day-name d/weekday)		; MS uses 'aaaa for localized 'dddd
+					| ["ddd" | "mon" | "Mon"] (emit copy/part day-name d/weekday 3)
+					| "dd" (emit pad-num d/day 2)						; TBD allow 2 digit chars?
+					| "d"  (emit d/day)									; TBD allow 1 digit char?
 					; Day ordinal requires case-sensitive parsing right now.
-					| ["DDD" | "Dth"] (emit ordinal d/day)
+					| "Dth" (emit as-ordinal d/day)						; ?? ["DDD" | "Dth"]
 					;| "ww" (emit to integer! d/julian / 7) ; week of year
 					| "ww" (emit year-week d) ; week of year
 					| ["w" | "weekday"]  (emit d/weekday)
@@ -237,8 +246,8 @@ date-time-formatting: context [
 					  ]
 					  opt [":" (emit time-sep)]
 					  opt [
-						["mm" | "nn"] (emit pad-num t/minute 2)
-						| ["m" | "n"] (emit t/minute)
+						["mm" | "nn"] (emit pad-num t/minute 2)		;?? not sure 'nn is worth having
+						| ["m" | "n"] (emit t/minute)				;?? not sure 'n is worth having
 					  ]
 					;| "sss"  (emit pad-num t/second 6) ; include decimal component
 					| "sss"  (emit pad-decimal t/second 2 3) ; include decimal component to 3 places
@@ -246,31 +255,41 @@ date-time-formatting: context [
 					| "s"    (emit to integer! t/second)
 					| "ttttt"  (emit format-date-time value 'long-time)
 					; Time meridian requires case-sensitive parsing right now.
-					| ["AM/PM" | "AM-PM"] (emit am-pm/uppercase t)
+					| ["AM/PM" | "AM-PM"] (emit am-pm/uppercase t)	;?? Are alternates helpful here?
 					| ["am/pm" | "am-pm"] (emit am-pm t)
 					| ["A/P" | "A-P"] (emit first form am-pm/uppercase t)
 					| ["a/p" | "a-p"] (emit first form am-pm t)
 					;!! Note that we have *-en versions for RFC format use
-					| ["mmmm-en" | "january-en"] (emit en-month-name d/month)
-					| ["mmm-en" | "jan-en"] (emit en-month-abbr d/month)
-					| ["mmmm" | "january"] (emit month-name d/month)
-					| ["mmm" | "jan"] (emit copy/part month-name d/month 3)
+					| ["mmmm-en" | "january-en" | "January-en"] (emit en-month-name d/month)	; MS uses 'oooo for localized 'mmmm
+					| ["mmm-en" | "jan-en" | "Jan-en"] (emit en-month-abbr d/month)
+					| ["mmmm" | "january" | "January"] (emit month-name d/month)
+					| ["mmm" | "jan" | "Jan"] (emit copy/part month-name d/month 3)
 					| "mm"   (emit pad-num either was-time? [t/minute][d/month] 2)
 					| "m"    (emit either was-time? [t/minute][d/month])
-					| ["Mth"] (emit ordinal d/month)  ; support "MMM"?
-					| "qqqq" (emit pick [first second third fourth] (month-qtr d/month))
-					| ["qqq" | "Qth"] (emit ordinal month-qtr d/month)
+					| ["Mth"] (emit as-ordinal d/month)  			;?? ["MMM" | "Mth"]
+					| "qqqq" (emit pick [first second third fourth] (month-qtr d/month))	; Not locale aware
+					| "Qth" (emit as-ordinal month-qtr d/month)		;?? ["QQQ" | "Qth"]
 					| "qq"   (emit pad-num (month-qtr d/month) 2)
 					| "q"    (emit month-qtr d/month)
 					| "yyyy" (emit d/year)
 					| "yy"   (emit at form d/year 3)
-					| "y"    (emit d/julian) ; yd ytd ???
-					| "zz:zz" (if t: value/zone [emit rejoin [pick ["-" "+"] negative? t  pad-num absolute t/hour 2 ":" pad-num t/minute 2]])
-					| "zzzz"  (if t: value/zone [emit rejoin [pick ["-" "+"] negative? t  pad-num absolute t/hour 2 pad-num t/minute 2]])
+					| "y"    (emit d/julian) 						;?? yd ytd
+					| opt #"±" "zz:zz" (if t: value/zone [emit rejoin [pick ["-" "+"] negative? t  pad-num absolute t/hour 2 ":" pad-num t/minute 2]])
+					| opt #"±" "zzzz"  (if t: value/zone [emit rejoin [pick ["-" "+"] negative? t  pad-num absolute t/hour 2 pad-num t/minute 2]])
 				]
 			]
-			set 'format-date-time-via-mask func [value [date! time!] fmt [string!]][
-				res: copy ""
+			set 'format-date-time-via-mask func [
+				value [date! time!]
+				fmt [string!]
+			][
+				;!! This isn't great, because mutually recursive calls to formatting,
+				;   which can be useful in some cases, are unsafe. The reason it's 
+				;   set up to use the context level var is that Red currently has 
+				;   some limitations when compiling functions inside functions. We
+				;   might be able to use a context in the func, which would be cleaner,
+				;   but then we have all that overhead in every format call, to build
+				;   the context.
+				res: copy ""							; context level var so parse actions can change it
 				parse/case fmt rules
 				res
 			]
@@ -334,20 +353,12 @@ date-time-formatting: context [
 				; http://cyber.law.harvard.edu/rss/rss.html
 				; http://diveintomark.org/archives/2003/06/21/history_of_rss_date_formats
 				; http://www.ietf.org/rfc/rfc1123.txt
-				; Allows for 4 digit years in the RFC822 spec.
-;				RSS     [format-date-time value "ddd-en, dd mmm-en yyyy hhh:mm:ss zzzz"]
-;				RFC1123 [format-date-time value "ddd-en, dd mmm-en yyyy hhh:mm:ss zzzz"]
-;				
-;				; http://tools.ietf.org/html/rfc2822#page-14
-;				RFC2822 [format-date-time value "ddd-en, dd mmm-en yyyy hhh:mm:ss zzzz"]
 				; http://tools.ietf.org/html/rfc2822#page-14
 				RFC2822 RFC1123 RSS [
 					format-date-time value "ddd-en, dd mmm-en yyyy hhh:mm:ss zzzz"
 				]
 
 				; Must be in UTC            
-				; Monday, 15-Aug-05 15:52:01 UTC
-				; DAY, DD-MMM-YYYY HH:MM:SS GMT
 				; Per https://tools.ietf.org/html/rfc2616#section-3.3.1
 				;	HTTP-date    = rfc1123-date | rfc850-date | asctime-date
 				;	rfc1123-date = wkday "," SP date1 SP time SP "GMT"
@@ -356,7 +367,6 @@ date-time-formatting: context [
 				;HTTP-Cookie [format-date-time value "ddd, dd mmm yyyy hhh:mm:ss zzzz"]
 				HTTP-Cookie [format-date-time value "dddd-en, dd mmm-en yyyy hhh:mm:ss zzzz"]
 				RFC850 USENET [format-date-time value "dddd-en, dd mmm-en yy hhh:mm:ss zzzz"]
-				;USENET      [format-date-time value "dddd-en, dd mmm-en yy hhh:mm:ss zzzz"]
 				; http://www.ietf.org/rfc/rfc1036.txt  §2.1.2
 				RFC1036     [format-date-time value "ddd-en, dd mmm-en yy hhh:mm:ss zzzz"]
 				
@@ -405,6 +415,55 @@ e.g. [
 		RFC850     
 		USENET     
 		RFC1036    
+		
+		
+		"Mon, dd January, yyyy" 
+		"monday, dd jan, yyyy" 
+		"monday, dd jan, yyyy ±zzzz" 
+		"monday, dd jan, yyyy ±zz:zz" 
+		
+		"c"
+		"dddddd"
+		"ddddd"
+		"dddd"
+		"ddd"
+		"dd"
+		"d"
+		"Mon"
+		"Monday"
+		
+		"Dth"
+		
+		"w"
+		"ww"
+		"weekday"
+		
+		"ttttt"
+		"h:m:s"
+		"hh:mm:ss"
+		"hhh:mm:sss"
+		"hAM/PM"
+		"ham/pm"
+		"hA/P"
+		"ha/p"
+		
+		"mmmm"
+		"mmm"
+		"mm"
+		"m"
+		"Mth"
+
+		"qqqq"
+		"Qth"
+		"qq"
+		"q"
+
+		"yyyy"
+		"yy"
+		"y"
+		
+		"zz:zz"
+		"±zzzz"
 	][test dt fmt]
 		
 		
