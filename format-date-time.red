@@ -24,21 +24,19 @@ date-time-formatting: context [
 		pad/with/left form num wd #"0"
 	]
 
-	pad-decimal: func [
+	pad-decimal: function [
 		"Formats a decimal with a minimum number of digits on the left and a maximum number of digits on the right. No separators added."
 		value   [integer! float!] "The value to format"
 		int-len [integer!] "The number of digits desired on the left of the decimal point. (right justified, never truncates)"
 		dec-len [integer!] "The number of digits desired on the right of the decimal point. (left justified, may truncate)"
-		/local dec
 	][
 		dec: round/to absolute (mod value 1) (10 ** negate dec-len)
-		rejoin [
-			pad-num to integer! value int-len
-			;- Max deci digits, no min
-			; find form dec #"."
-			;- Fixed deci digits 
-			#"." pad/with find/tail form dec #"." dec-len #"0"
-		]
+		int-part: pad-num to integer! value int-len
+		dec-part: find/tail form dec #"."
+		;!! `pad` modifies the arg, and returns the HEAD. We don't want that in
+		;	this case, so we don't re-set dec-part to refer to pad's result.
+		pad/with dec-part dec-len #"0"
+		rejoin [int-part #"." dec-part]
 	]
 	
 	combine: func [
@@ -143,7 +141,7 @@ date-time-formatting: context [
 	set 'format-date-time func [
 		value [date! time!]
 		fmt   [word! string!] "Named or custom format"
-		/local d t tt res get-time local-date std-time year-week month-qtr rfc-3339-fmt was-time?
+		/local d t tt res time-only local-date std-time year-week month-qtr rfc-3339-fmt was-time?
 	] [
 		; If we only got a time, assume the current date. But also set a flag so
 		; we can determine later if we got a time! value as an argument. That way
@@ -160,27 +158,30 @@ date-time-formatting: context [
 			value/time: 00:00:00
 		]
 		
-		get-time:  func [val] [either time? val [val] [val/time]]
-		;date-only: func [val] [if val/time [val/time: none]  val]
-		date-only: func [val] [attempt [val/date]]
+		; Helper funcs
+		time-only: func [val [date! time!]] [either time? val [val][val/time]]
+		date-only: func [val [date! time!]] [either date? val [val/date][none]]
 		local-date: func [date] [date - date/zone + now/zone]
-		am-pm: func [time /uppercase] [
+		am-pm: func [time [time!] /uppercase][
 			pick either uppercase [[AM PM]] [[am pm]] time < 12:00
 		]
-		am-pm-time: func [time] [
-			either time < 12:00 [
-				if zero? time/hour [time/hour: 12]
-				time
-			][
-				time: mod time 12:00  ; ~= time: time - 12:00
-				if zero? time/hour [time/hour: 12]
-				time
-			]
+		am-pm-time: func [
+			"Convert 24-hour time to 12-hour time. THIS INTENTIONALLY LOSES INFORMATION"
+			time [time!]
+		][
+			if time >= 12:00 [time: mod time 12:00]		; Constrain to  >= 00:00 and < 12:00
+			if zero? time/hour [time/hour: 12]			; Humans don't have 0 on a round clock
+			time
 		]
-		std-time: func [time /full] [
-			if not full [time/second: 0]
-			form reduce [am-pm-time time am-pm/uppercase time]
-		]
+; Not used currently		
+;		std-time: func [
+;			"Time formatted for humans"
+;			time [time!]
+;			/full
+;		][
+;			if not full [time/second: 0]
+;			form reduce [am-pm-time time am-pm/uppercase time]
+;		]
 		year-week: func [date /local year new-year day-num offset][
 			year: date/year
 			new-year: make date! reduce [1 1 year] ; to-date join "1-Jan-" year
@@ -199,8 +200,13 @@ date-time-formatting: context [
 				(pick "-+" negative? z) (pad-num absolute z/hour 2) (any [sep ""]) (pad-num z/minute 2)
 			]
 		]
+		; Fractional seconds are considered a rarely used option in the RFC.
+		; The question for us is whether to have the user control whether
+		; fractional seconds are used via a special name, or by modding their
+		; data values, by trimming fractional seconds, to avoid them being
+		; included.
 		rfc-3339-fmt: func [value /local t] [
-			t: get-time value
+			t: time-only value
 			; If the time includes fractional seconds, include them in
 			; the format, otherwise omit them.
 			format-date-time value either zero? remainder t/second 1 [
@@ -230,7 +236,7 @@ date-time-formatting: context [
 			;day-abbr: func [index] [pick system/locale/days-abbr index]
 			;month-abbr: func [index] [pick system/locale/months-abbr index]
 			rules: [
-				(d: date-only value t: get-time value)
+				(d: date-only value t: time-only value)
 				any [
 					  copy ch pass-char (emit ch)
 					| escape copy ch any-char (emit ch)
@@ -319,9 +325,9 @@ date-time-formatting: context [
 				medium-date [form date-only value]
 				short-date  [format-date-time value "dd/mm/yyyy"]
 				; 'rel-days is handled in format-number
-				long-time   [std-time/full get-time value]
-				medium-time [std-time get-time value]
-				short-time  [t: get-time value  t/3: 0  form t]
+				long-time   [format-date-time value "hh:mm:sss AM/PM"]
+				medium-time [format-date-time value "hh:mm:ss AM/PM"]
+				short-time  [format-date-time value "hh:mm AM/PM"]
 				
 				;!! Relative days and times may be outside the current scope, as
 				;   they need to be locale aware.
@@ -335,9 +341,6 @@ date-time-formatting: context [
 				
 				; http://tools.ietf.org/html/rfc3339
 				; http://www.w3.org/TR/NOTE-datetime.html
-;				RFC3339     [rfc-3339-fmt value]
-;				Atom        [rfc-3339-fmt value]
-;				W3C         [rfc-3339-fmt value]
 				RFC3339 Atom W3C W3C-DTF [rfc-3339-fmt value]
 
 				; http://en.wikipedia.org/wiki/ISO_8601
@@ -482,5 +485,17 @@ e.g. [
 		"±zzzz"
 	][test dt fmt]
 		
-		
+	val: 0:0:0
+	foreach fmt [long-time medium-time short-time][
+		test val fmt
+	]
+	val: 12:0:0
+	foreach fmt [long-time medium-time short-time][
+		test val fmt
+	]
+	val: 13:0:0
+	foreach fmt [long-time medium-time short-time][
+		test val fmt
+	]
+	
 ]
