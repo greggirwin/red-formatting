@@ -194,7 +194,11 @@ date-time-formatting: context [
 			]
 		]
 		month-qtr: func [month [integer!]] [to integer! month - 1 / 3 + 1]
-		zone: func [z [date! time!] /with sep [char! string!]][
+		zone: func [
+			"Format a timezone value, including the sign."
+			z [date! time!]
+			/with sep [char! string!] "Include a separator between the hours and minutes"
+		][
 			if date? z [z: z/zone]
 			rejoin [
 				(pick "-+" negative? z) (pad-num absolute z/hour 2) (any [sep ""]) (pad-num z/minute 2)
@@ -210,18 +214,19 @@ date-time-formatting: context [
 			; If the time includes fractional seconds, include them in
 			; the format, otherwise omit them.
 			format-date-time value either zero? remainder t/second 1 [
-				"yyyy-mm-dd\Thhh:mm:sszz:zz"
+				"yyyy-mm-dd\Thhh:mm:ss±zz:zz"
 			][
-				"yyyy-mm-dd\Thhh:mm:ssszz:zz"
+				"yyyy-mm-dd\Thhh:mm:sss±zz:zz"
 			]
 		]
 
 		date-time-mask-formatting: context [
 			res: none
+			pos: none
 			emit: func [val] [append res val]
 
 			any-char: complement charset ""
-			pass-char: charset " ^-^/,.'"		; space tab newline , . '
+			pass-char: charset " ^-^/,.' "		; space tab newline , . ' nbsp
 			escape: ["^^" | "\"]
 			time-sep: ":"   					; Should this be customizable?
 			date-sep: "-"   					; Should this be customizable?
@@ -242,8 +247,7 @@ date-time-formatting: context [
 					| escape copy ch any-char (emit ch)
 					| ":" (emit time-sep)
 					| copy ch ["-" | "/"] (emit ch) ;(emit date-sep)
-					;| "c" (emit format-date-time value "ddddd ttttt")	; c = "C"omplete
-					| "c" (emit format-date-time value "dd/mm/yyyy hh:mm:ssAM/PM")	; c = "C"omplete
+					| "c" (emit format-date-time value "dd/mm/yyyy hh:mm:ss AM/PM")	; c = "C"omplete
 					| "dddddd" (emit format-date-time value "dddd, mmmm dd, yyyy")
 					| "ddddd" (emit format-date-time value "dd/mm/yyyy")
 					;!! Note that we have *-en versions for RFC format use
@@ -257,7 +261,7 @@ date-time-formatting: context [
 					| "Dth" (emit as-ordinal d/day)						; ?? ["DDD" | "Dth"]
 					;| "ww" (emit to integer! d/julian / 7) ; week of year
 					| "ww" (emit year-week d) ; week of year
-					| ["w" | "weekday"]  (emit d/weekday)
+					| ["weekday" | "w"]  (emit d/weekday)
 					| [
 						; "hhhh"  (emit pad-num t/hour 2 emit pad-num t/minute 2 ) ; = 0800 2300 etc.
 						"hhh" (emit pad-num t/hour 2) ; mil-time 00-23
@@ -269,11 +273,10 @@ date-time-formatting: context [
 						["mm" | "nn"] (emit pad-num t/minute 2)		;?? not sure 'nn is worth having
 						| ["m" | "n"] (emit t/minute)				;?? not sure 'n is worth having
 					  ]
-					;| "sss"  (emit pad-num t/second 6) ; include decimal component
 					| "sss"  (emit pad-decimal t/second 2 3) ; include decimal component to 3 places
 					| "ss"   (emit pad-num to integer! t/second 2)
 					| "s"    (emit to integer! t/second)
-					| "ttttt"  (emit format-date-time value 'long-time)
+					| "ttttt"  (emit format-date-time value "hh:mm:sss AM/PM")	; long-time
 					; Time meridian requires case-sensitive parsing right now.
 					| ["AM/PM" | "AM-PM"] (emit am-pm/uppercase t)	;?? Are alternates helpful here?
 					| ["am/pm" | "am-pm"] (emit am-pm t)
@@ -294,8 +297,22 @@ date-time-formatting: context [
 					| "yyyy" (emit d/year)
 					| "yy"   (emit at form d/year 3)
 					| "y"    (emit d/julian) 						;?? yd ytd
+					; Supporting the optional ± sigil may seem unnecessary, but
+					; it can act as documentation in the format string. It 
+					; indicates that a sign character will be there. Since the
+					; zone often comes after seconds (ss) in format strings, it
+					; can also clarify that value marker position.
 					| opt #"±" "zz:zz" (emit zone/with value #":")
 					| opt #"±" "zzzz"  (emit zone value)
+					| pos: (
+						print [
+							"Unexpected value in format string:" newline
+							tab "Where:" mold pos newline
+							tab "Index:" index? pos newline
+							tab "Value:" mold pos/1 newline
+							tab "Code Point:" to integer! pos/1
+						]
+					) reject
 				]
 			]
 			set 'format-date-time-via-mask func [
@@ -310,8 +327,7 @@ date-time-formatting: context [
 				;   but then we have all that overhead in every format call, to build
 				;   the context.
 				res: copy ""							; context level var so parse actions can change it
-				parse/case fmt rules
-				res
+				if parse/case fmt rules [res]
 			]
 		]
 
@@ -335,8 +351,6 @@ date-time-formatting: context [
 				;rel-hours   [rel-hour-string either time? value [value - now/time] [difference value now]]
 				;rel-time    [rel-time-string either time? value [value - now/time] [difference value now]]
 				
-				;idate       [format-date-time value 'RFC2822]
-				
 				; http://www.hackcraft.net/web/datetime/
 				
 				; http://tools.ietf.org/html/rfc3339
@@ -348,14 +362,22 @@ date-time-formatting: context [
 					either none? value/time [
 						format-date-time value "yyyymmdd"
 					][
-						format-date-time value join "yyyymmdd^^Thhhmmss" either 0:00 = value/zone ["^^Z"] ["zzzz"]
+						; If we want to emit Z for UTC times, we can use the first
+						; option here. The second is simpler, though, and the
+						; output just as valid (and more consistent to boot).
+						;format-date-time value join "yyyymmdd^^Thhhmmss" either 0:00 = value/zone ["^^Z"] ["zzzz"]
+						format-date-time value "yyyymmdd^^Thhhmmss±zzzz"
 					]
 				]
 				ISO-8601 [ ; ISO8601 with separators
 					either none? value/time [
 						format-date-time value "yyyy-mm-dd"
 					][
-						format-date-time value join "yyyy-mm-dd^^Thhh:mm:ss" either 0:00 = value/zone ["^^Z"] ["zzzz"]
+						; If we want to emit Z for UTC times, we can use the first
+						; option here. The second is simpler, though, and the
+						; output just as valid (and more consistent to boot).
+						;format-date-time value join "yyyy-mm-dd^^Thhh:mm:ss" either 0:00 = value/zone ["^^Z"] ["zzzz"]
+						format-date-time value "yyyy-mm-dd^^Thhh:mm:ss±zzzz"
 					]
 				]
 				
@@ -364,7 +386,7 @@ date-time-formatting: context [
 				; http://tech.groups.yahoo.com/group/rss-public/message/536
 				RFC822 [
 					; We use 2 digits for the year to match the spec. RFC2822 uses 4 digits.
-					format-date-time value "ddd-en, dd mmm-en yy hhh:mm:ss zzzz"
+					format-date-time value "ddd-en, dd mmm-en yy hhh:mm:ss ±zzzz"
 				]
 				
 				; http://cyber.law.harvard.edu/rss/rss.html
@@ -372,7 +394,7 @@ date-time-formatting: context [
 				; http://www.ietf.org/rfc/rfc1123.txt
 				; http://tools.ietf.org/html/rfc2822#page-14
 				RFC2822 RFC1123 RSS [
-					format-date-time value "ddd-en, dd mmm-en yyyy hhh:mm:ss zzzz"
+					format-date-time value "ddd-en, dd mmm-en yyyy hhh:mm:ss ±zzzz"
 				]
 
 				; Must be in UTC
@@ -387,10 +409,10 @@ date-time-formatting: context [
 				HTTP-Cookie [format-date-time as-utc value "dddd-en, dd mmm-en yyyy hhh:mm:ss ^^G^^M^^T"]
 				RFC850 USENET [format-date-time as-utc value "dddd-en, dd mmm-en yy hhh:mm:ss ^^G^^M^^T"]
 				; http://www.ietf.org/rfc/rfc1036.txt  §2.1.2
-				RFC1036     [format-date-time as-utc value "ddd-en, dd mmm-en yy hhh:mm:ss zzzz"]
+				RFC1036     [format-date-time as-utc value "ddd-en, dd mmm-en yy hhh:mm:ss ±zzzz"]
 				
 				; throw error - unknown named format specified?
-			] [either any-block? value [form reduce value] [form value]]
+			][either any-block? value [form reduce value] [form value]]
 		]
 	]
 
@@ -399,8 +421,9 @@ date-time-formatting: context [
 e.g.: :comment
 e.g.: :do
 e.g. [
-	test: func [val fmt][
-		print [mold fmt  tab mold format-date-time val fmt]
+	test: func [val fmt /local res][
+		res: format-date-time val fmt
+		print [mold fmt  tab mold res]
 	]
 
 	dt: now/precise
@@ -497,5 +520,12 @@ e.g. [
 	foreach fmt [long-time medium-time short-time][
 		test val fmt
 	]
+	
+	test now "monday, dd jan, yyyy ±zz:zz" 	; nbsp
+
+	test now "x"
+	test now "monday, dd jan, yyyy ±±zz:zz" 
+	test now "monday, dd jan,$yyyy ±zz:zz" 
+	test now "monday, dd jan, yyyy ±zz:zz$" 
 	
 ]
