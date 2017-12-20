@@ -140,7 +140,7 @@ date-time-formatting: context [
 	
 	set 'format-date-time func [
 		value [date! time!]
-		fmt   [word! string!] "Named or custom format"
+		fmt   [word! string! block!] "Named, custom, or accessor format"
 		/local d t tt res time-only local-date std-time year-week month-qtr rfc-3339-fmt was-time?
 	] [
 		; If we only got a time, assume the current date. But also set a flag so
@@ -182,13 +182,12 @@ date-time-formatting: context [
 ;			if not full [time/second: 0]
 ;			form reduce [am-pm-time time am-pm/uppercase time]
 ;		]
-		year-week: func [date /local year new-year day-num offset][
-			year: date/year
-			new-year: make date! reduce [1 1 year] ; to-date join "1-Jan-" year
+		year-week: function [date [date!]][
+			new-year: make date! reduce [1 1 date/year] ; to-date join "1-Jan-" year
 			day-num: date - new-year + 1
 			offset: new-year/weekday - 1
 			either not zero? remainder (day-num + offset) 7 [
-				to-integer (day-num + offset / 7) + 1
+				to integer! (day-num + offset / 7) + 1
 			][
 				day-num + offset / 7
 			]
@@ -331,88 +330,119 @@ date-time-formatting: context [
 			]
 		]
 
-		either string? fmt [
-			format-date-time-via-mask value fmt
-		][
-			; named formats
-			switch/default fmt [
-				general     [form value]
-				long-date   [format-date-time value "dddd, mmmm dd, yyyy"]
-				medium-date [form date-only value]
-				short-date  [format-date-time value "dd/mm/yyyy"]
-				; 'rel-days is handled in format-number
-				long-time   [format-date-time value "hh:mm:sss AM/PM"]
-				medium-time [format-date-time value "hh:mm:ss AM/PM"]
-				short-time  [format-date-time value "hh:mm AM/PM"]
-				
-				;!! Relative days and times may be outside the current scope, as
-				;   they need to be locale aware.
-				;rel-days    [rel-day-string value - now]
-				;rel-hours   [rel-hour-string either time? value [value - now/time] [difference value now]]
-				;rel-time    [rel-time-string either time? value [value - now/time] [difference value now]]
-				
-				; http://www.hackcraft.net/web/datetime/
-				
-				; http://tools.ietf.org/html/rfc3339
-				; http://www.w3.org/TR/NOTE-datetime.html
-				RFC3339 Atom W3C W3C-DTF [rfc-3339-fmt value]
-
-				; http://en.wikipedia.org/wiki/ISO_8601
-				ISO8601 [ ; ISO8601 without separators
-					either none? value/time [
-						format-date-time value "yyyymmdd"
-					][
-						; If we want to emit Z for UTC times, we can use the first
-						; option here. The second is simpler, though, and the
-						; output just as valid (and more consistent to boot).
-						;format-date-time value join "yyyymmdd^^Thhhmmss" either 0:00 = value/zone ["^^Z"] ["zzzz"]
-						format-date-time value "yyyymmdd^^Thhhmmss±zzzz"
+		date-time-accessor-formatting: context [
+			var: none
+			pos: none
+			set 'format-date-time-via-accessors function [
+				value [date! time!]
+				fmt [block!]
+			][
+				; Rejoin will let us butt up commas and such, but also means we
+				; MUST use delimiting values between accessors.
+				rejoin collect [
+					rules: [
+						any [
+							set var word! (
+								keep either pos: find system/catalog/accessors/date! var [
+									if pos/1 = 'julian [ ;<< synonym for yearday, and not a valid index
+										pos: find system/catalog/accessors/date! 'yearday
+									]
+									pick value index? pos
+								][#NO_ACCESSOR_BY_THAT_NAME]
+							)
+							| set var string! (keep var)
+							| set var any-type! (keep form :var)
+						]
 					]
+					parse fmt rules
 				]
-				ISO-8601 [ ; ISO8601 with separators
-					either none? value/time [
-						format-date-time value "yyyy-mm-dd"
-					][
-						; If we want to emit Z for UTC times, we can use the first
-						; option here. The second is simpler, though, and the
-						; output just as valid (and more consistent to boot).
-						;format-date-time value join "yyyy-mm-dd^^Thhh:mm:ss" either 0:00 = value/zone ["^^Z"] ["zzzz"]
-						format-date-time value "yyyy-mm-dd^^Thhh:mm:ss±zzzz"
-					]
-				]
-				
-				; http://www.w3.org/Protocols/rfc822/
-				; http://feed2.w3.org/docs/error/InvalidRFC2822Date.html
-				; http://tech.groups.yahoo.com/group/rss-public/message/536
-				RFC822 [
-					; We use 2 digits for the year to match the spec. RFC2822 uses 4 digits.
-					format-date-time value "ddd-en, dd mmm-en yy hhh:mm:ss ±zzzz"
-				]
-				
-				; http://cyber.law.harvard.edu/rss/rss.html
-				; http://diveintomark.org/archives/2003/06/21/history_of_rss_date_formats
-				; http://www.ietf.org/rfc/rfc1123.txt
-				; http://tools.ietf.org/html/rfc2822#page-14
-				RFC2822 RFC1123 RSS [
-					format-date-time value "ddd-en, dd mmm-en yyyy hhh:mm:ss ±zzzz"
-				]
+			]
+		]
+		
+		case [
+			string? fmt [format-date-time-via-mask value fmt]
+			block? fmt [format-date-time-via-accessors value fmt]
+			'else [
+				; named formats
+				switch/default fmt [
+					general     [form value]
+					long-date   [format-date-time value "dddd, mmmm dd, yyyy"]
+					medium-date [form date-only value]
+					short-date  [format-date-time value "dd/mm/yyyy"]
+					; 'rel-days is handled in format-number
+					long-time   [format-date-time value "hh:mm:sss AM/PM"]
+					medium-time [format-date-time value "hh:mm:ss AM/PM"]
+					short-time  [format-date-time value "hh:mm AM/PM"]
+					
+					;!! Relative days and times may be outside the current scope, as
+					;   they need to be locale aware.
+					;rel-days    [rel-day-string value - now]
+					;rel-hours   [rel-hour-string either time? value [value - now/time] [difference value now]]
+					;rel-time    [rel-time-string either time? value [value - now/time] [difference value now]]
+					
+					; http://www.hackcraft.net/web/datetime/
+					
+					; http://tools.ietf.org/html/rfc3339
+					; http://www.w3.org/TR/NOTE-datetime.html
+					RFC3339 Atom W3C W3C-DTF [rfc-3339-fmt value]
 
-				; Must be in UTC
-				; HTTP-date is case sensitive and MUST NOT include additional
-				; LWS beyond that specifically included as SP in the grammar.
-				; Per https://tools.ietf.org/html/rfc2616#section-3.3.1
-				;	HTTP-date    = rfc1123-date | rfc850-date | asctime-date
-				;	rfc1123-date = wkday "," SP date1 SP time SP "GMT"
-				;	rfc850-date  = weekday "," SP date2 SP time SP "GMT"
-				;	asctime-date = wkday SP date3 SP time SP 4DIGIT				
-				;HTTP-Cookie [format-date-time value "ddd, dd mmm yyyy hhh:mm:ss GMT"]
-				HTTP-Cookie [format-date-time as-utc value "dddd-en, dd mmm-en yyyy hhh:mm:ss ^^G^^M^^T"]
-				RFC850 USENET [format-date-time as-utc value "dddd-en, dd mmm-en yy hhh:mm:ss ^^G^^M^^T"]
-				; http://www.ietf.org/rfc/rfc1036.txt  §2.1.2
-				RFC1036     [format-date-time as-utc value "ddd-en, dd mmm-en yy hhh:mm:ss ±zzzz"]
-				
-				; throw error - unknown named format specified?
-			][either any-block? value [form reduce value] [form value]]
+					; http://en.wikipedia.org/wiki/ISO_8601
+					ISO8601 [ ; ISO8601 without separators
+						either none? value/time [
+							format-date-time value "yyyymmdd"
+						][
+							; If we want to emit Z for UTC times, we can use the first
+							; option here. The second is simpler, though, and the
+							; output just as valid (and more consistent to boot).
+							;format-date-time value join "yyyymmdd^^Thhhmmss" either 0:00 = value/zone ["^^Z"] ["zzzz"]
+							format-date-time value "yyyymmdd^^Thhhmmss±zzzz"
+						]
+					]
+					ISO-8601 [ ; ISO8601 with separators
+						either none? value/time [
+							format-date-time value "yyyy-mm-dd"
+						][
+							; If we want to emit Z for UTC times, we can use the first
+							; option here. The second is simpler, though, and the
+							; output just as valid (and more consistent to boot).
+							;format-date-time value join "yyyy-mm-dd^^Thhh:mm:ss" either 0:00 = value/zone ["^^Z"] ["zzzz"]
+							format-date-time value "yyyy-mm-dd^^Thhh:mm:ss±zzzz"
+						]
+					]
+					
+					; http://www.w3.org/Protocols/rfc822/
+					; http://feed2.w3.org/docs/error/InvalidRFC2822Date.html
+					; http://tech.groups.yahoo.com/group/rss-public/message/536
+					RFC822 [
+						; We use 2 digits for the year to match the spec. RFC2822 uses 4 digits.
+						format-date-time value "ddd-en, dd mmm-en yy hhh:mm:ss ±zzzz"
+					]
+					
+					; http://cyber.law.harvard.edu/rss/rss.html
+					; http://diveintomark.org/archives/2003/06/21/history_of_rss_date_formats
+					; http://www.ietf.org/rfc/rfc1123.txt
+					; http://tools.ietf.org/html/rfc2822#page-14
+					RFC2822 RFC1123 RSS [
+						format-date-time value "ddd-en, dd mmm-en yyyy hhh:mm:ss ±zzzz"
+					]
+
+					; Must be in UTC
+					; HTTP-date is case sensitive and MUST NOT include additional
+					; LWS beyond that specifically included as SP in the grammar.
+					; Per https://tools.ietf.org/html/rfc2616#section-3.3.1
+					;	HTTP-date    = rfc1123-date | rfc850-date | asctime-date
+					;	rfc1123-date = wkday "," SP date1 SP time SP "GMT"
+					;	rfc850-date  = weekday "," SP date2 SP time SP "GMT"
+					;	asctime-date = wkday SP date3 SP time SP 4DIGIT				
+					;HTTP-Cookie [format-date-time value "ddd, dd mmm yyyy hhh:mm:ss GMT"]
+					HTTP-Cookie [format-date-time as-utc value "dddd-en, dd mmm-en yyyy hhh:mm:ss ^^G^^M^^T"]
+					RFC850 USENET [format-date-time as-utc value "dddd-en, dd mmm-en yy hhh:mm:ss ^^G^^M^^T"]
+					; http://www.ietf.org/rfc/rfc1036.txt  §2.1.2
+					RFC1036     [format-date-time as-utc value "ddd-en, dd mmm-en yy hhh:mm:ss ±zzzz"]
+					
+					; throw error - unknown named format specified?
+				][either any-block? value [form reduce value] [form value]]
+			]
 		]
 	]
 
@@ -506,6 +536,17 @@ e.g. [
 		
 		"zz:zz"
 		"±zzzz"
+		
+		[date]
+		[date time]
+		[yearday julian]
+		[
+	        date year month day zone time hour minute second weekday yearday 
+	        timezone week isoweek julian
+	    ] 
+	    [bad-accessor-name]
+		[date " " time]
+		[year "." month "." day "|" hour "_" minute "_" second]
 	][test dt fmt]
 		
 	val: 0:0:0
