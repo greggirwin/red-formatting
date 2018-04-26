@@ -64,7 +64,7 @@ details start to pop up.
 - Format a block of values
 - Support formats suited to each datatype
 - Interpolate formatted values into a block
-- Interpolate values in a string
+- Interpolate formatted values in a string
 - Create a formatted row
 - Create a formatted column
 - Create a table

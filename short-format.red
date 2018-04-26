@@ -215,6 +215,7 @@ short-format-ctx: context [
 		value: case [												; Reassign 'value to string result for later padding
 			spec/style [apply-format-style value spec/style]		; A named format style was used
 			not number? :value [form any [:value ""]]				; Coerce none to ""; form to prevent arg modifcation
+																	; ?? What about FALSE?
 			'else [
 				suffix: either all [integer? value  flag? spec #"º"] [ordinal-suffix value][""]
 				append mold absolute value suffix					; Note: absolute; no sign here
@@ -274,10 +275,10 @@ short-format-ctx: context [
 			; then want a way to skip to a new index in the values.
 			case [
 				none?    spec/key [if series? data [take data]]	; unkeyed field, take sequentially from data
-				integer? spec/key [pick-val data spec/key]			; index key
-				paren?   spec/key [do-paren spec/key]				; expression to evaluate
-				path?    spec/key [get-path-key data spec/key]		; deep key
-				'else [												; simple key name
+				integer? spec/key [pick-val data spec/key]		; index key
+				paren?   spec/key [do-paren spec/key]			; expression to evaluate
+				path?    spec/key [get-path-key data spec/key]	; deep key
+				'else [											; simple key name
 					;?? Do we want to allow functions? I'm not so sure.
 					val: select data spec/key
 					either any-function? :val [val][val]

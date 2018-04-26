@@ -362,6 +362,10 @@ date-time-formatting: context [
 		case [
 			string? fmt [format-date-time-via-mask value fmt]
 			block? fmt [format-date-time-via-accessors value fmt]
+			;!! If we check for named formats first, and just set the format
+			;	to the string format associated with the name, we eliminate
+			;	the recursive call. There are a few exception cases, where we
+			;	just FORM the value, and where we force it to be a UTC time.
 			'else [
 				; named formats
 				switch/default fmt [

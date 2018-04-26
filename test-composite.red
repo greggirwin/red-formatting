@@ -57,6 +57,8 @@ foreach val [
 	")::("
 	":(1):beg):"
 	"asdf:(1):beg):"
+	":(1/a/b/c):"
+	":(2abc):"
 ][test-bad-composite val]
 
 print "^/Composite/Marks"
@@ -83,6 +85,8 @@ foreach val [
 	"a:(a + b):b"
 ][test-composite-with val o]
 	
+
+
 print ""
 
 halt

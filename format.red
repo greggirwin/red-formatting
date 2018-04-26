@@ -17,6 +17,11 @@ Red [
 		- mold-logic (DONE)
 		- Composite (DONE)
 		- as-ordinal (DONE)
+
+		- block interpolation
+		- string interpolation
+		- date format
+		- format-number-via-masks
 	}
 	TBD: {
 		- Determine exact format-by-width/short-form+prec behavior! It seems like the
@@ -565,6 +570,7 @@ formatting: context [
 			rejoin [round/to size scale  any [ch ""]  units/1]
 		]
 	]
+
 	; Should this also support integers, so format-number doesn't have to call this 
 	; func? Really, it could support any value that can be converted to logic, but
 	; is that more helpful to the user, or will it make things more confusing for
@@ -984,8 +990,7 @@ formatting: context [
 			C-hex    [join "0x" to-hex to integer! n]
 			;VB-hex   [join "&H" to-hex to integer! n]
 			;octal    [] ; maybe useful for things like `chmod 755` viz	; no enbase for octal yet
-			bin      [num-to-bin-str n]
-			binary   [num-to-bin-str n]
+			bin binary [num-to-bin-str n]
 			min-bin  [							; No leading zeros
 				either zero? n [""] [
 					form find num-to-bin-str n complement charset "0"

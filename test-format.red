@@ -2,6 +2,7 @@
 
 do %format.red
 do %short-format.red
+do %format-date-time.red
 
 ;-------------------------------------------------------------------------------
 

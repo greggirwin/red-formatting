@@ -17,7 +17,10 @@ composite-ctx: context [
 		ctx [none! object!] "Evaluate expr in the given context; none means use global context"
 		/local res
 	][
-		expr: load expr
+		if error? set/any 'res try [expr: load expr][
+			;return any [err-val  form reduce [" *** Error: Invalid expression Where:" expr "*** "]]
+			cause-error 'syntax 'invalid [arg1: 'composite-expression arg2: expr]
+		]
 		; If expression evaluates to a non-block value that is anything other than a 
 		; word, we can't bind it.
 		if all [ctx  any [block? :expr  word? :expr]][bind expr ctx]
@@ -34,12 +37,23 @@ composite-ctx: context [
 	; with a refinement, and then just have to choose the default.
 	; Putting the colons on the outside gives you a clean paren expression
 	; on the inside.
+	; `Compose` could be extended, to work as-is for blocks, but add support for
+	; this behavior for strings. The extra refinements are an issue, though.
+	; They don't conflict with the existing `compose` refinements, but we
+	; have to see how they might cause confusion given the different behaviors.
 	set 'composite func [
-		"Replace :( ... ): sections in a string with their evaluated results."
+		"Returns a copy of a string, evaluating :( ... ): sections"
+		;"Replace :( ... ): sections in a string with their evaluated results"
+		;"Returns a copy of a string, replacing :( ... ): sections with their evaluated results"
 		data [string! file! url!]
 		/marks markers [block!] "Use custom expression markers in place of :( and ):"
 		/with ctx [object!] "Evaluate the expressions in the given context"
 		/err-val e "Use instead of formed error info from eval error"
+		; /into might be useful, but it also complicates things, given the current implementation.
+		; Need to weigh the value. If we always create or use the out buffer, rather than changing
+		; the input data in place, it won't add much complexity.
+		;/into "Put results in `out`, instead of creating a new string"
+		;	out [string!] "Target for results, when /into is used"
 		/local expr expr-beg= expr-end= pos
 	][
 		if all [marks  not parse markers [2 [char! | string! | tag!]]][
