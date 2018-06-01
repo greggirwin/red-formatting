@@ -589,7 +589,7 @@ formatting: context [
 		]
 		if word? fmt [							; Named formats
 			if not find/skip fmts fmt 2 [
-				return make error! rejoin ["Unknown named format passed to format-logic: " fmt]
+				return make error! rejoin ["Unknown named format passed to form-logic: " fmt]
 			]
 			fmt: fmts/:fmt
 		]
@@ -1008,7 +1008,9 @@ formatting: context [
 
 	; The printf model of <total>.<deci> lengths is unintuitive to me. It seems more
 	; natural to use <whole>.<deci>. The question is how much "discussion" that
-	; will cause. 
+	; will cause. <total>.<deci> makes sense at the higher level, assuming <total>
+	; accounts for signs and the decimal point. My issue is that it looks like you're
+	; mapping m.n to <whole>.<part> directly, if you think of how the number looks.
 	set 'format-number-by-width function [
 		"Formats a number given a total length and a maximum number of decimal digits. No separators added."
 		value   [number!]  "The value to format"
@@ -1055,7 +1057,7 @@ format-number: function [
 ][
 	
 	case [
-		is-named-logic-format? fmt [format-logic not zero? value fmt]	; to logic! 0 == true in Red.
+		is-named-logic-format? fmt [form-logic not zero? value fmt]	; to logic! 0 == true in Red.
 		block?  fmt [format-number-via-masks  value fmt]
 		string? fmt [format-number-via-masks  value fmt]
 		word?   fmt [format-number-with-style value fmt]
@@ -1213,7 +1215,7 @@ set 'format-value func [
 		; not sure what to do with NONE values.
 		find [integer! float! percent! none!] type [format-number value fmt] ; decimal! money! 
 ;		find [time!] type [format-date-time value fmt] ; date!
-		type = 'logic!          [format-logic  value fmt]
+		type = 'logic!          [form-logic  value fmt]
 		any-string? value       [format-string value fmt]
 	]
 ]
@@ -1221,7 +1223,7 @@ set 'format-value func [
 
 ;[number! not 'bytes]						format-number
 ;[number! 'bytes]							format-bytes
-;[logic! *]									format-logic
+;[logic! *]									form-logic
 ;[parse-as-composite string!] 				composite
 ;[parse-as-short-format string! any-type!] 	short-form 
 ;[parse-as-block-format block!  any-type!] 	block-form 
@@ -1256,7 +1258,7 @@ set 'format function [
 
 		;find [date! time!] type [format-date-time value fmt]
 
-		logic? :value      [format-logic value :fmt]
+		logic? :value      [form-logic value :fmt]
 		
 		any-string? :value [format-string value fmt]
 		
