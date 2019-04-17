@@ -368,6 +368,9 @@ date-time-formatting: context [
 			;	just FORM the value, and where we force it to be a UTC time.
 			'else [
 				; named formats
+				; TBD: consolidate `format-date-time value "..."` calls by setting
+				; the format string, checking that, and then having the function
+				; call in just one place.
 				switch/default fmt [
 					general     [form value]
 					long-date   [format-date-time value "dddd, mmmm dd, yyyy"]
