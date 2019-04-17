@@ -1,10 +1,12 @@
 Red [
-	Author: [@greggirwin @endo @toomasv]
+	Author: [@greggirwin @endo @toomasv @hiiamboris]
 	Purpose: "COMPOSE for strings"
 	Notes: {
 		TBD: Security model for eval'ing expressions
 		TBD: Decide if support for custom marker and eval contexts are worthwhile
 		TBD: Finalize refinement names
+		TBD: Decide if suport for function contexts is worthwhile
+		TBD: Make it a macro?
 	}
 ]
 
@@ -14,16 +16,19 @@ composite-ctx: context [
 		"Evaluate expr and return the result"
 		expr [string!] "Valid Red, as a string expression"
 		err-val "If not none, return this instead of formed error information, if eval fails"
-		ctx [none! object!] "Evaluate expr in the given context; none means use global context"
+		ctx [none! object! function!] "Evaluate expr in the given context; none means use global context"
 		/local res
 	][
 		if error? set/any 'res try [expr: load expr][
 			;return any [err-val  form reduce [" *** Error: Invalid expression Where:" expr "*** "]]
 			cause-error 'syntax 'invalid [arg1: 'composite-expression arg2: expr]
 		]
+		; If they used a literal string, return it.
+		if string? :expr [return expr]
 		; If expression evaluates to a non-block value that is anything other than a 
-		; word, we can't bind it.
-		if all [ctx  any [block? :expr  word? :expr]][bind expr ctx]
+		; word, we can't bind it. And if ctx is a function, we have to reassign the
+		; rebound expr, so we do it in every case, as it's harmless for objects.
+		if all [:ctx  any [block? :expr  word? :expr]][expr: bind expr :ctx]
 		either error? set/any 'res try [do expr][
 			any [err-val  form reduce [" *** Error:" res/id "Where:" expr "*** "]]
 		][
@@ -47,7 +52,7 @@ composite-ctx: context [
 		;"Returns a copy of a string, replacing :( ... ): sections with their evaluated results"
 		data [string! file! url!]
 		/marks markers [block!] "Use custom expression markers in place of :( and ):"
-		/with ctx [object!] "Evaluate the expressions in the given context"
+		/with ctx [object! function!] "Evaluate the expressions in the given context"
 		/err-val e "Use instead of formed error info from eval error"
 		; /into might be useful, but it also complicates things, given the current implementation.
 		; Need to weigh the value. If we always create or use the out buffer, rather than changing
@@ -72,7 +77,7 @@ composite-ctx: context [
 			; an uninitiated expression as data thru the expr-end marker.
 			any [
 				end break
-				| change [expr-beg= copy expr to expr-end= expr-end=] (eval expr e ctx)
+				| change [expr-beg= copy expr to expr-end= expr-end=] (eval expr e :ctx)
 				| expr-beg= pos: to end (cause-error 'syntax 'missing [arg1: expr-end= arg2: pos])
 				| to expr-beg= ; find the next expression
 				| pos: to expr-end= (cause-error 'syntax 'missing [arg1: expr-beg= arg2: pos])

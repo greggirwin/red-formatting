@@ -17,12 +17,17 @@ test-composite-marks: func [input markers][
 test-composite-with: func [input ctx][
 	print [mold input "==" mold composite/with input ctx]
 ]
+test-composite-with-fn: func [input [string!] fn [function!] arg][
+	print [mold input "==" mold fn input arg]
+]
 
 print "Composite"
+s: "1 + 2"
 foreach val [
 	""
 	":(1):"
 	":(pi):"
+	{:("foo"):}
 	":(rejoin ['a 'b]):"
 	"a:('--):b"
 	"a:('--):"
@@ -40,6 +45,11 @@ foreach val [
 	"a :('--):"
 	":('--): b"
 	"ax :(1 / 0): xb"
+
+	{a :("1 + 2"): b}
+	{a :({{1 + 2}}): b}
+	{a :({"1 + 2"}): b}
+	{a :(s): b}
 ][test-composite val]
 
 print "^/Composite/custom-error-val"
@@ -84,7 +94,13 @@ foreach val [
 	":(rejoin [a b]):"
 	"a:(a + b):b"
 ][test-composite-with val o]
-	
+
+; Function support is from @hiiamboris. I'm not sure about it's usefulness yet.
+print "^/Composite/with (func)"
+f: func [str w][
+	composite/with str context? 'w
+]
+test-composite-with-fn ":(w):" :f 100
 
 
 print ""
