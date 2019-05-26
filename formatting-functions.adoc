@@ -501,10 +501,14 @@ Examples:
     == "Yeah!"
     >> form-logic false [Yeah! No-way!]
     == "No-way!"
-    >> mold-logic true 'on-off
-    == on-off
-    >> mold-logic true 'yes-no
-    == yes-no
+    >> mold-logic/on-off true
+    == on
+    >> mold-logic/on-off false
+    == off
+    >> mold-logic/yes-no true
+    == yes
+    >> mold-logic/yes-no false
+    == no
 ....
 
 == format-string
